@@ -1,0 +1,618 @@
+[
+  {
+    "id": 1,
+    "title": "Ghostbook 1",
+    "latitude": 40.4184762840885,
+    "longitude": 49.8409973178356,
+    "imageCount": 1,
+    "date": "19/08/25"
+  },
+  {
+    "id": 2,
+    "title": "Ghostbook 2",
+    "latitude": 40.37444848676,
+    "longitude": 49.8465251178356,
+    "imageCount": 1,
+    "date": "19/08/25"
+  },
+  {
+    "id": 3,
+    "title": "Ghostbook 3",
+    "latitude": 40.3748373867364,
+    "longitude": 49.8424973178356,
+    "imageCount": 0,
+    "date": "19/08/25"
+  },
+  {
+    "id": 4,
+    "title": "Ghostbook 4",
+    "latitude": 40.3743076433843,
+    "longitude": 49.8406084178356,
+    "imageCount": 0,
+    "date": "19/08/25"
+  },
+  {
+    "id": 5,
+    "title": "Ghostbook 5",
+    "latitude": 40.3767798433093,
+    "longitude": 49.8422168356265,
+    "imageCount": 1,
+    "date": "19/08/25"
+  },
+  {
+    "id": 6,
+    "title": "Ghostbook 6",
+    "latitude": 40.380085343209,
+    "longitude": 49.8456902409773,
+    "imageCount": 0,
+    "date": "19/08/25"
+  },
+  {
+    "id": 7,
+    "title": "Ghostbook 7",
+    "latitude": 40.3783882216302,
+    "longitude": 49.8302279294589,
+    "imageCount": 0,
+    "date": "31/08/25"
+  },
+  {
+    "id": 8,
+    "title": "Ghostbook 8",
+    "latitude": 40.3771768324729,
+    "longitude": 49.8305102589066,
+    "imageCount": 1,
+    "date": "31/08/25"
+  },
+  {
+    "id": 9,
+    "title": "Ghostbook 9",
+    "latitude": 40.3762246108315,
+    "longitude": 49.8310034294589,
+    "imageCount": 1,
+    "date": "31/08/25"
+  },
+  {
+    "id": 10,
+    "title": "Ghostbook 10",
+    "latitude": 40.3767418216552,
+    "longitude": 49.8279225589066,
+    "imageCount": 1,
+    "date": "31/08/25"
+  },
+  {
+    "id": 11,
+    "title": "Ghostbook 11",
+    "latitude": 40.3754568216747,
+    "longitude": 49.8266565589066,
+    "imageCount": 1,
+    "date": "31/08/25"
+  },
+  {
+    "id": 12,
+    "title": "Ghostbook 12",
+    "latitude": 40.3708121108725,
+    "longitude": 49.8287276294589,
+    "imageCount": 1,
+    "date": "31/08/25"
+  },
+  {
+    "id": 13,
+    "title": "Ghostbook 13",
+    "latitude": 40.3692884326523,
+    "longitude": 49.8343659294589,
+    "imageCount": 1,
+    "date": "31/08/25"
+  },
+  {
+    "id": 14,
+    "title": "Ghostbook 14",
+    "latitude": 40.3710992217407,
+    "longitude": 49.8379423294589,
+    "imageCount": 1,
+    "date": "31/08/25"
+  },
+  {
+    "id": 15,
+    "title": "Ghostbook 15",
+    "latitude": 40.3714739108675,
+    "longitude": 49.8413152294589,
+    "imageCount": 1,
+    "date": "31/08/25"
+  },
+  {
+    "id": 16,
+    "title": "Ghostbook 16",
+    "latitude": 40.3768950216529,
+    "longitude": 49.8478380294589,
+    "imageCount": 1,
+    "date": "07/09/25"
+  },
+  {
+    "id": 17,
+    "title": "Ghostbook 17",
+    "latitude": 40.3749705433641,
+    "longitude": 49.8518415294589,
+    "imageCount": 1,
+    "date": "07/09/25"
+  },
+  {
+    "id": 18,
+    "title": "Ghostbook 18",
+    "latitude": 40.370688221747,
+    "longitude": 49.8490745294589,
+    "imageCount": 1,
+    "date": "07/09/25"
+  },
+  {
+    "id": 19,
+    "title": "Ghostbook 19",
+    "latitude": 40.3680919326795,
+    "longitude": 49.8445143589066,
+    "imageCount": 1,
+    "date": "07/09/25"
+  },
+  {
+    "id": 20,
+    "title": "Ghostbook 20",
+    "latitude": 40.3735799325547,
+    "longitude": 49.8455346294589,
+    "imageCount": 1,
+    "date": "07/09/25"
+  },
+  {
+    "id": 21,
+    "title": "Ghostbook 21",
+    "latitude": 40.4072655105961,
+    "longitude": 49.8463232294589,
+    "imageCount": 1,
+    "date": "09/09/25"
+  },
+  {
+    "id": 22,
+    "title": "Ghostbook 22",
+    "latitude": 40.4025260212642,
+    "longitude": 49.8490802294589,
+    "imageCount": 1,
+    "date": "09/09/25"
+  },
+  {
+    "id": 23,
+    "title": "Ghostbook 23",
+    "latitude": 40.4003259212975,
+    "longitude": 49.8529194294589,
+    "imageCount": 1,
+    "date": "09/09/25"
+  },
+  {
+    "id": 24,
+    "title": "Ghostbook 24",
+    "latitude": 40.3646658218383,
+    "longitude": 49.8314466294589,
+    "imageCount": 1,
+    "date": "06/10/25"
+  },
+  {
+    "id": 25,
+    "title": "Ghostbook 25",
+    "latitude": 40.3646740109191,
+    "longitude": 49.8343377589066,
+    "imageCount": 1,
+    "date": "06/10/25"
+  },
+  {
+    "id": 26,
+    "title": "Ghostbook 26",
+    "latitude": 40.3643132109218,
+    "longitude": 49.8329869294589,
+    "imageCount": 1,
+    "date": "06/10/25"
+  },
+  {
+    "id": 27,
+    "title": "Ghostbook 27",
+    "latitude": 40.4203899209931,
+    "longitude": 49.9183901294589,
+    "imageCount": 1,
+    "date": "06/10/25"
+  },
+  {
+    "id": 28,
+    "title": "Ghostbook 28",
+    "latitude": 40.3656794109115,
+    "longitude": 49.8297739294589,
+    "imageCount": 1,
+    "date": "10/10/25"
+  },
+  {
+    "id": 29,
+    "title": "Ghostbook 29",
+    "latitude": 40.393836810698,
+    "longitude": 49.8741454000112,
+    "imageCount": 1,
+    "date": "15/10/25"
+  },
+  {
+    "id": 30,
+    "title": "Ghostbook 30",
+    "latitude": 40.4033979106254,
+    "longitude": 49.8728445294589,
+    "imageCount": 1,
+    "date": "15/10/25"
+  },
+  {
+    "id": 31,
+    "title": "Ghostbook 31",
+    "latitude": 40.3744709325344,
+    "longitude": 49.8162814294589,
+    "imageCount": 0,
+    "date": "01/11/25"
+  },
+  {
+    "id": 32,
+    "title": "Ghostbook 32",
+    "latitude": 40.3733756217063,
+    "longitude": 49.8139948294589,
+    "imageCount": 1,
+    "date": "01/11/25"
+  },
+  {
+    "id": 33,
+    "title": "Ghostbook 33",
+    "latitude": 40.3750864108402,
+    "longitude": 49.8114055589066,
+    "imageCount": 1,
+    "date": "01/11/25"
+  },
+  {
+    "id": 34,
+    "title": "Ghostbook 34",
+    "latitude": 40.3781872216333,
+    "longitude": 49.8114296589066,
+    "imageCount": 1,
+    "date": "01/11/25"
+  },
+  {
+    "id": 35,
+    "title": "Ghostbook 35",
+    "latitude": 40.4094304211594,
+    "longitude": 49.8619742589066,
+    "imageCount": 1,
+    "date": "19/11/25"
+  },
+  {
+    "id": 36,
+    "title": "Ghostbook 36",
+    "latitude": 40.3580403329081,
+    "longitude": 49.8367684589066,
+    "imageCount": 1,
+    "date": "19/11/25"
+  },
+  {
+    "id": 37,
+    "title": "Ghostbook 37",
+    "latitude": 40.3955134320558,
+    "longitude": 49.8406221589066,
+    "imageCount": 1,
+    "date": "07/12/25"
+  },
+  {
+    "id": 38,
+    "title": "Ghostbook 38",
+    "latitude": 40.3974103106709,
+    "longitude": 49.8327908294589,
+    "imageCount": 1,
+    "date": "07/12/25"
+  },
+  {
+    "id": 39,
+    "title": "Ghostbook 39",
+    "latitude": 40.3905885803376,
+    "longitude": 49.8369829515792,
+    "imageCount": 1,
+    "date": "07/12/25"
+  },
+  {
+    "id": 40,
+    "title": "Ghostbook 40",
+    "latitude": 40.3852971,
+    "longitude": 49.8379892294589,
+    "imageCount": 1,
+    "date": "07/12/25"
+  },
+  {
+    "id": 41,
+    "title": "Ghostbook 41",
+    "latitude": 40.3798435324122,
+    "longitude": 49.8768863294589,
+    "imageCount": 1,
+    "date": "31/12/25"
+  },
+  {
+    "id": 42,
+    "title": "Ghostbook 42",
+    "latitude": 40.3825208107838,
+    "longitude": 49.8862130294589,
+    "imageCount": 1,
+    "date": "31/12/25"
+  },
+  {
+    "id": 43,
+    "title": "Ghostbook 43",
+    "latitude": 40.3842694215411,
+    "longitude": 49.8759592294589,
+    "imageCount": 1,
+    "date": "31/12/25"
+  },
+  {
+    "id": 44,
+    "title": "Ghostbook 44",
+    "latitude": 40.3803579108002,
+    "longitude": 49.8667422294589,
+    "imageCount": 1,
+    "date": "31/12/25"
+  },
+  {
+    "id": 45,
+    "title": "Ghostbook 45",
+    "latitude": 40.378002810818,
+    "longitude": 49.8555694589066,
+    "imageCount": 1,
+    "date": "31/12/25"
+  },
+  {
+    "id": 46,
+    "title": "Ghostbook 46",
+    "latitude": 40.40060213194,
+    "longitude": 49.8425973294589,
+    "imageCount": 1,
+    "date": "08/01/26"
+  },
+  {
+    "id": 47,
+    "title": "Ghostbook 47",
+    "latitude": 40.4021172212703,
+    "longitude": 49.8375074294589,
+    "imageCount": 1,
+    "date": "08/01/26"
+  },
+  {
+    "id": 48,
+    "title": "Ghostbook 48",
+    "latitude": 40.3951837213755,
+    "longitude": 49.8641022294589,
+    "imageCount": 1,
+    "date": "25/01/26"
+  },
+  {
+    "id": 49,
+    "title": "Ghostbook 49",
+    "latitude": 40.3914914214315,
+    "longitude": 49.8600011294589,
+    "imageCount": 1,
+    "date": "25/01/26"
+  },
+  {
+    "id": 50,
+    "title": "Ghostbook 50",
+    "latitude": 40.3900343214536,
+    "longitude": 49.8580458294589,
+    "imageCount": 1,
+    "date": "25/01/26"
+  },
+  {
+    "id": 51,
+    "title": "Ghostbook 51",
+    "latitude": 40.3881039214829,
+    "longitude": 49.8527833294589,
+    "imageCount": 1,
+    "date": "25/01/26"
+  },
+  {
+    "id": 52,
+    "title": "Ghostbook 52",
+    "latitude": 40.3789840108106,
+    "longitude": 49.8466393294589,
+    "imageCount": 1,
+    "date": "08/02/26"
+  },
+  {
+    "id": 53,
+    "title": "Ghostbook 53",
+    "latitude": 40.3710650217413,
+    "longitude": 49.8379979294589,
+    "imageCount": 1,
+    "date": "08/02/26"
+  },
+  {
+    "id": 54,
+    "title": "Ghostbook 54",
+    "latitude": 40.3718497108647,
+    "longitude": 49.8367564294589,
+    "imageCount": 1,
+    "date": "08/02/26"
+  },
+  {
+    "id": 55,
+    "title": "Ghostbook 55",
+    "latitude": 40.3829606323414,
+    "longitude": 49.8392693294589,
+    "imageCount": 1,
+    "date": "24/02/26"
+  },
+  {
+    "id": 56,
+    "title": "Ghostbook 56",
+    "latitude": 40.3839581430916,
+    "longitude": 49.8346166589066,
+    "imageCount": 1,
+    "date": "24/02/26"
+  },
+  {
+    "id": 57,
+    "title": "Ghostbook 57",
+    "latitude": 40.3829790107803,
+    "longitude": 49.8325574294589,
+    "imageCount": 1,
+    "date": "24/02/26"
+  },
+  {
+    "id": 58,
+    "title": "Ghostbook 58",
+    "latitude": 40.3811996431752,
+    "longitude": 49.8325969589066,
+    "imageCount": 1,
+    "date": "24/02/26"
+  },
+  {
+    "id": 59,
+    "title": "Ghostbook 59",
+    "latitude": 40.3752491433557,
+    "longitude": 49.8313947000112,
+    "imageCount": 1,
+    "date": "24/02/26"
+  },
+  {
+    "id": 60,
+    "title": "Ghostbook 60",
+    "latitude": 40.3741122433902,
+    "longitude": 49.8367681294589,
+    "imageCount": 1,
+    "date": "24/02/26"
+  },
+  {
+    "id": 61,
+    "title": "Ghostbook 61",
+    "latitude": 40.3748044650538,
+    "longitude": 49.8421463294589,
+    "imageCount": 1,
+    "date": "24/02/26"
+  },
+  {
+    "id": 62,
+    "title": "Ghostbook 62",
+    "latitude": 40.3809360647748,
+    "longitude": 49.8348886294589,
+    "imageCount": 1,
+    "date": "24/02/26"
+  },
+  {
+    "id": 63,
+    "title": "Ghostbook 63",
+    "latitude": 40.381899743154,
+    "longitude": 49.8230292294589,
+    "imageCount": 1,
+    "date": "29/03/26"
+  },
+  {
+    "id": 64,
+    "title": "Ghostbook 64",
+    "latitude": 40.3825136539192,
+    "longitude": 49.8224136294589,
+    "imageCount": 1,
+    "date": "29/03/26"
+  },
+  {
+    "id": 65,
+    "title": "Ghostbook 65",
+    "latitude": 40.489299639893,
+    "longitude": 50.1424588589066,
+    "imageCount": 1,
+    "date": "08/04/26"
+  },
+  {
+    "id": 66,
+    "title": "Ghostbook 66",
+    "latitude": 40.4078593529581,
+    "longitude": 49.9448172589066,
+    "imageCount": 1,
+    "date": "19/04/26"
+  },
+  {
+    "id": 67,
+    "title": "Ghostbook 67",
+    "latitude": 40.3598982657317,
+    "longitude": 49.8359772589066,
+    "imageCount": 1,
+    "date": "26/04/26"
+  },
+  {
+    "id": 68,
+    "title": "Ghostbook 68",
+    "latitude": 40.3395977444364,
+    "longitude": 49.8381545589066,
+    "imageCount": 2,
+    "date": "26/04/26"
+  },
+  {
+    "id": 69,
+    "title": "Ghostbook 69",
+    "latitude": 40.3575812658371,
+    "longitude": 49.8304445294589,
+    "imageCount": 1,
+    "date": "28/04/26"
+  },
+  {
+    "id": 70,
+    "title": "Ghostbook 70",
+    "latitude": 40.3569478768435,
+    "longitude": 49.8180939294589,
+    "imageCount": 1,
+    "date": "28/04/26"
+  },
+  {
+    "id": 71,
+    "title": "Ghostbook 71",
+    "latitude": 40.3522996550644,
+    "longitude": 49.8123862000112,
+    "imageCount": 1,
+    "date": "28/04/26"
+  },
+  {
+    "id": 72,
+    "title": "Ghostbook 72",
+    "latitude": 40.3673794435943,
+    "longitude": 49.8254737000112,
+    "imageCount": 1,
+    "date": "28/04/26"
+  },
+  {
+    "id": 73,
+    "title": "Ghostbook 73",
+    "latitude": 40.3692286653074,
+    "longitude": 49.8099893000112,
+    "imageCount": 1,
+    "date": "29/04/26"
+  },
+  {
+    "id": 74,
+    "title": "Ghostbook 74",
+    "latitude": 40.3663551654381,
+    "longitude": 49.8184698294589,
+    "imageCount": 1,
+    "date": "29/04/26"
+  },
+  {
+    "id": 75,
+    "title": "Ghostbook 75",
+    "latitude": 40.366872976317,
+    "longitude": 49.8192674000112,
+    "imageCount": 1,
+    "date": "29/04/26"
+  },
+  {
+    "id": 76,
+    "title": "Ghostbook 76",
+    "latitude": 40.3735871688128,
+    "longitude": 49.8455479595001,
+    "imageCount": 1,
+    "date": "30/04/26"
+  },
+  {
+    "id": 77,
+    "title": "Ghostbook 77",
+    "latitude": 40.3740944964667,
+    "longitude": 49.8462080381441,
+    "imageCount": 2,
+    "date": "30/04/26"
+  }
+]
