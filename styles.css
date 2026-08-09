@@ -1,0 +1,27 @@
+body {
+    margin: 0;
+    padding: 0;
+}
+
+#map {
+    height: 500px;
+    width: 100%;
+}
+
+/* map.js */
+.leaflet-popup-content {
+    max-height: 200px;
+    overflow-y: auto;
+}
+
+.leaflet-popup-content img {
+    width: 100px;
+    margin-right: 5px;
+}
+
+.leaflet-layer,
+.leaflet-control-zoom-in,
+.leaflet-control-zoom-out,
+.leaflet-control-attribution {
+  filter: invert(100%) hue-rotate(180deg) brightness(95%) contrast(90%);
+}
