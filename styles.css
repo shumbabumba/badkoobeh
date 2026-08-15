@@ -1,27 +1,415 @@
+* {
+    box-sizing: border-box;
+}
+
+html,
 body {
+    width: 100%;
+    height: 100%;
     margin: 0;
     padding: 0;
+    overflow: hidden;
+
+    background: #02090d;
+    color: #6d858a;
+
+    font-family: Arial, Helvetica, sans-serif;
 }
+
+
+/* --------------------------------
+   MAP
+-------------------------------- */
 
 #map {
-    height: 500px;
+    position: fixed;
+    inset: 0;
+
     width: 100%;
+    height: 100%;
+
+    z-index: 1;
 }
 
-/* map.js */
-.leaflet-popup-content {
-    max-height: 200px;
-    overflow-y: auto;
+
+/* --------------------------------
+   INTERFACE
+-------------------------------- */
+
+#interface {
+    position: fixed;
+    inset: 0;
+
+    z-index: 1000;
+
+    pointer-events: none;
 }
 
-.leaflet-popup-content img {
-    width: 100px;
-    margin-right: 5px;
+
+/* --------------------------------
+   SUBTLE GRID
+-------------------------------- */
+
+#interface::before {
+    content: "";
+
+    position: absolute;
+    inset: 0;
+
+    background-image:
+        linear-gradient(
+            rgba(0, 246, 255, 0.035) 1px,
+            transparent 1px
+        ),
+        linear-gradient(
+            90deg,
+            rgba(0, 246, 255, 0.035) 1px,
+            transparent 1px
+        );
+
+    background-size: 40px 40px;
+
+    pointer-events: none;
 }
 
-.leaflet-layer,
-.leaflet-control-zoom-in,
-.leaflet-control-zoom-out,
-.leaflet-control-attribution {
-  filter: invert(100%) hue-rotate(180deg) brightness(95%) contrast(90%);
+
+#description {
+    position: absolute;
+
+    top: 35px;
+    left: 50px;
+
+    letter-spacing: 4px;
+}
+
+#title {
+    font-size: 20px;
+    font-weight: 400;
+
+    color: #ffffff;
+}
+
+#languages {
+    margin-top: 12px;
+
+    font-size: 14px;
+    letter-spacing: 1px;
+
+    color: #8b9da2;
+}
+
+#languages .active {
+    color: #6d858a;
+}
+
+
+/* --------------------------------
+   WEATHER CARD
+-------------------------------- */
+
+#weather-card {
+    position: absolute;
+
+    top: 60px;
+    right: 55px;
+
+    width: 400px;
+    height: 300px;
+
+    padding: 30px 30px;
+
+    background: rgba(1, 12, 17, 0.88);
+
+    border: 1px solid #6d858a;
+
+    color: #6d858a;
+
+    box-shadow:
+        0 0 25px rgba(0, 246, 255, 0.08),
+        inset 0 0 25px rgba(0, 246, 255, 0.025);
+
+    backdrop-filter: blur(8px);
+
+    clip-path: polygon(
+        20px 0,
+        calc(100% - 20px) 0,
+        100% 20px,
+        100% calc(100% - 20px),
+        calc(100% - 20px) 100%,
+        20px 100%,
+        0 calc(100% - 20px),
+        0 20px
+    );
+}
+
+
+/* little corner brackets */
+
+#weather-card::before,
+#weather-card::after {
+    content: "";
+
+    position: absolute;
+
+    width: 25px;
+    height: 25px;
+
+    pointer-events: none;
+}
+
+#weather-card::before {
+    top: 8px;
+    left: 8px;
+
+    border-top: 2px solid #6d858a;
+    border-left: 2px solid #6d858a;
+}
+
+#weather-card::after {
+    bottom: 8px;
+    right: 8px;
+
+    border-bottom: 2px solid #6d858a;
+    border-right: 2px solid #6d858a;
+}
+
+
+/* --------------------------------
+   WEATHER LOCATION
+-------------------------------- */
+
+.weather-location {
+    font-size: 14px;
+    font-weight: bold;
+    color: #6d858a;
+    letter-spacing: 2px;
+}
+
+.weather-time {
+    display: flex;
+    align-items: center;
+
+    gap: 12px;
+
+    margin-top: 12px;
+
+    color: #9ab1b6;
+
+    font-size: 10px;
+    font-weight: normal;
+
+    letter-spacing: 1px;
+}
+
+.live {
+    padding: 4px 8px;
+
+    border: 1px solid rgba(109, 133, 138, 0.6);
+
+    color: #6d858a;
+
+    font-size: 10px;
+    letter-spacing: 1px;
+}
+
+
+/* --------------------------------
+   TEMPERATURE
+-------------------------------- */
+
+.temperature {
+    margin-top: 10px;
+
+    color: #6d858a;
+
+    font-size: 50px;
+    font-weight: 300;
+
+    line-height: 1;
+}
+
+.temperature sup {
+    font-size: 14px;
+    vertical-align: top;
+
+    position: relative;
+    top: 8px;
+}
+
+
+/* --------------------------------
+   DIVIDER
+-------------------------------- */
+
+.weather-line {
+    height: 1px;
+
+    margin: 10px 0;
+
+    background: rgba(109, 133, 138, 0.35);
+}
+
+
+/* --------------------------------
+   WEATHER DETAILS
+-------------------------------- */
+
+.weather-details {
+    display: grid;
+
+    grid-template-columns:
+        repeat(3, 1fr);
+
+    gap: 0px;
+}
+
+.weather-details span {
+    display: block;
+
+    margin-bottom: 9px;
+
+    color: #6d858a;
+
+    font-size: 11px;
+    letter-spacing: 1px;
+}
+
+.weather-details strong {
+    color: #6d858a;
+
+    font-size: 18px;
+    font-weight: 400;
+}
+
+
+/* --------------------------------
+   GHOSTBOOK INFO
+-------------------------------- */
+
+#ghostbook-info {
+    position: absolute;
+
+    left: 50px;
+    bottom: 45px;
+
+    display: flex;
+    align-items: center;
+
+    gap: 14px;
+
+    color: #d5e0e2;
+
+    font-size: 13px;
+
+    letter-spacing: 0.3px;
+}
+
+#ghostbook-info strong {
+    color: #ffffff;
+    font-weight: 400;
+}
+
+#ghostbook-info span {
+    color: #71878b;
+}
+
+.status-dot {
+    width: 10px;
+    height: 10px;
+
+    border-radius: 50%;
+
+    background: #6d858a;
+
+    box-shadow:
+        0 0 8px #6d858a,
+        0 0 18px rgba(109, 133, 138, 0.5);
+}
+
+
+/* --------------------------------
+   CREDITS
+-------------------------------- */
+
+#credits {
+    position: absolute;
+
+    right: 40px;
+    bottom: 25px;
+
+    color: rgba(210, 220, 222, 0.7);
+
+    font-size: 12px;
+
+    letter-spacing: 0.5px;
+}
+
+/* --------------------------------
+   LEAFLET MARKERS
+-------------------------------- */
+
+.custom-text-marker {
+    background: transparent;
+
+    border: none;
+
+    color: #6d858a;
+
+    font-size: 12px;
+}
+
+
+/* --------------------------------
+   MOBILE
+-------------------------------- */
+
+@media (max-width: 700px) {
+
+    #description {
+        top: 20px;
+        left: 25px;
+    }
+
+    #title {
+        font-size: 17px;
+    }
+
+    #weather-card {
+        top: auto;
+        right: 15px;
+        bottom: 20px;
+        left: 15px;
+
+        width: auto;
+
+        padding: 22px 25px;
+    }
+
+    .temperature {
+        font-size: 60px;
+    }
+
+    .weather-location {
+        font-size: 16px;
+    }
+
+    .weather-details strong {
+        font-size: 15px;
+    }
+
+    #ghostbook-info {
+        display: none;
+    }
+
+    #credits {
+        right: 15px;
+        bottom: 5px;
+
+        font-size: 9px;
+    }
+
+    .corner {
+        width: 15px;
+        height: 15px;
+    }
 }
