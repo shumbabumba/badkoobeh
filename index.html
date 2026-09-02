@@ -23,61 +23,22 @@
     <div id="map"></div>
 
     <div id="interface">
-
         <div id="description">
-            <div id="title">BADKOOBEH</div>
+            <button id="title">BADKOOBEH</button>
 
-            <div id="languages">
-                <span>eng</span>
-                <span>|</span>
-                <span>aze</span>
+            <div id="description-popup" class="hidden">
+                <div class="popup-content">
+                    <span id="close-popup">&times;</span>
+                    <p data-description="eng">Lorem ipsum dolor sit amet consectetur adipisicing elit. Perspiciatis reiciendis quia ab odio, enim odit officiis labore laborum, nulla aspernatur porro sunt dicta accusantium incidunt adipisci, nam sapiente iusto consequatur!</p>
+                    <p data-description="aze">Lorem ipsum dolor sit amet consectetur adipisicing elit. Perspiciatis reiciendis quia ab odio, enim odit officiis labore laborum, nulla aspernatur porro sunt dicta accusantium incidunt adipisci, nam sapiente iusto consequatur!</p>
+                </div>
             </div>
         </div>
-
-
-        <div id="weather-card">
-
-            <div class="weather-location">
-                <div>Baku, Azerbaijan</div>
-
-                <div class="weather-time">
-                    <span id="datetime"></span>
-                    <span class="live">LIVE</span>
-                </div>
-            </div>
-
-
-            <div class="temperature">
-                <span id="temperature"></span>
-                <sup>°C</sup>
-            </div>
-
-
-            <div class="weather-line"></div>
-
-
-            <div class="weather-details">
-
-                <div>
-                    <span>Wind</span>
-                    <strong id="wind">km/h</strong>
-                </div>
-
-                <div>
-                    <span>Direction</span>
-                    <strong id="direction"></strong>
-                </div>
-
-                <div>
-                    <span>Humidity</span>
-                    <strong id="humidity">%</strong>
-                </div>
-
-            </div>
-
+        <div id="languages">
+            <button>eng</button>
+            <span>|</span>
+            <button>aze</button>
         </div>
-
     </div>
-
 </body>
 </html>

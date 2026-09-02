@@ -25,10 +25,8 @@ body {
 #interface {
     position: fixed;
     inset: 0;
-    z-index: 1000;
-    pointer-events: none;
+    z-index: 2;
 }
-
 
 #description {
     position: absolute;
@@ -37,187 +35,83 @@ body {
     letter-spacing: 4px;
 }
 
-#title:hover {
-    text-decoration: underline;
-}
-
 #title {
     font-size: 20px;
     font-weight: 400;
     color: #ffffff;
+    background: none;
+    border: none;
 }
 
+#title,
+#languages button {
+  pointer-events: auto;
+}
+
+#title:hover,
+#languages button:hover  {
+    text-decoration: underline;
+}
+
+.hidden {
+  display: none;
+  position: fixed;
+  z-index: 3;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.5);
+  justify-content: center;
+  align-items: center;
+}
+
+.hidden.active {
+  display: flex;
+}
+
+.popup-content {
+  background: #fff;
+  padding: 20px;
+  width: 300px;
+  border-radius: 5px;
+  position: relative;
+}
+
+#close-popup {
+  position: absolute;
+  top: 10px;
+  right: 15px;
+  cursor: pointer;
+  font-size: 20px;
+  z-index: 4;
+}
 
 #languages {
-    visibility: hidden;
-    margin-top: 12px;
     font-size: 14px;
     letter-spacing: 1px;
-    color: #8b9da2;
-}
-
-#languages .active {
-    color: #6d858a;
-}
-
-#weather-card {
+    background: none;
+    border: none;
     position: absolute;
-
-    top: 10px;
-    right: 10px;
-
-    width: 200px;
-    height: 200px;
-
-    padding: 30px 30px;
-
-    background: rgba(1, 12, 17, 0.88);
-
-    border: 1px solid #6d858a;
-
-    color: #6d858a;
-
-    box-shadow:
-        0 0 25px rgba(0, 246, 255, 0.08),
-        inset 0 0 25px rgba(0, 246, 255, 0.025);
-
-    backdrop-filter: blur(8px);
-
-    clip-path: polygon(
-        20px 0,
-        calc(100% - 20px) 0,
-        100% 20px,
-        100% calc(100% - 20px),
-        calc(100% - 20px) 100%,
-        20px 100%,
-        0 calc(100% - 20px),
-        0 20px
-    );
+    right: 30px;
+    top: 30px;
 }
 
-#weather-card::before,
-#weather-card::after {
-    content: "";
-
-    position: absolute;
-
-    width: 25px;
-    height: 25px;
-
-    pointer-events: none;
+#languages button {
+    background: none;
+    border: none;
+    color: white;
+    padding: 0;
+    font-size: 14px;
 }
-
-#weather-card::before {
-    top: 8px;
-    left: 8px;
-
-    border-top: 2px solid #6d858a;
-    border-left: 2px solid #6d858a;
-}
-
-#weather-card::after {
-    bottom: 8px;
-    right: 8px;
-
-    border-bottom: 2px solid #6d858a;
-    border-right: 2px solid #6d858a;
-}
-
-.weather-location {
-    font-size: 12px;
-    font-weight: bold;
-    color: #6d858a;
-    letter-spacing: 2px;
-}
-
-.weather-time {
-    display: flex;
-    align-items: center;
-
-    gap: 12px;
-
-    margin-top: 12px;
-
-    color: #9ab1b6;
-
-    font-size: 10px;
-    font-weight: normal;
-
-    letter-spacing: 1px;
-}
-
-.live {
-    padding: 4px 8px;
-
-    border: 1px solid rgba(109, 133, 138, 0.6);
-
-    color: #6d858a;
-
-    font-size: 6px;
-    letter-spacing: 1px;
-}
-
-
-.temperature {
-    margin-top: 10px;
-    margin-bottom: 5px;
-
-    color: #6d858a;
-
-    font-size: 30px;
-    font-weight: 300;
-
-    line-height: 1;
-}
-
-.temperature sup {
-    font-size: 10px;
-    vertical-align: top;
-
-    position: relative;
-    top: 8px;
-}
-
-
-.weather-line {
-    height: 1px;
-
-    margin: 10px 0;
-
-    background: rgba(109, 133, 138, 0.35);
-}
-
-
-.weather-details {
-    display: grid;
-
-    grid-template-columns:
-        repeat(3, max-content);
-
-    column-gap: 10px;
-}
-
-.weather-details span {
-    display: block;
-
-    margin-bottom: 9px;
-
-    color: #6d858a;
-
-    font-size: 11px;
-    letter-spacing: 1px;
-}
-
-.weather-details strong {
-    color: #6d858a;
-
-    font-size: 8px;
-    font-weight: 400;
+#languages span {
+    color: white;
+    font-size: 14px;
 }
 
 .leaflet-control-attribution {
     background: rgba(5, 15, 18, 0.85) !important;
-    color: #718b91 !important;
+    color: white !important;
     border: 1px solid rgba(113, 139, 145, 0.25);
     border-radius: 0 !important;
     padding: 5px 9px !important;
@@ -228,10 +122,6 @@ body {
 }
 
 .leaflet-control-attribution a {
-    color: #8da6ab !important;
+    color: white !important;
     text-decoration: none;
-}
-
-.leaflet-control-attribution a:hover {
-    color: #b4c9cc !important;
 }

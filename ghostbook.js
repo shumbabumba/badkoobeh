@@ -7,8 +7,23 @@ L.tileLayer('https://basemaps.cartocdn.com/rastertiles/dark_all/{z}/{x}/{y}.png?
 }).addTo(map);
 map.attributionControl.setPrefix(false);
 
-title = getParameterByName('title');
+const title = document.querySelector('#title');
+const hidden = document.querySelector('.hidden');
+const closePopup = document.querySelector('#close-popup');
 
+title.addEventListener('click', () => {
+  hidden.classList.add('active');
+});
+
+closePopup.addEventListener('click', () => {
+  hidden.classList.remove('active');
+});
+
+window.addEventListener('click', (event) => {
+  if (event.target === hidden) {
+    hidden.classList.remove('active');
+  }
+});
 
 
 
