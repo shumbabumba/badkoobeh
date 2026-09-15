@@ -62,7 +62,7 @@ body {
 /* Text fragment styling - simple, high-contrast, preserves Azerbaijani Unicode */
 .fragment {
     color: #ffffff;
-    font-size: 16px;
+    font-size: 10px;
     line-height: 1;
     font-weight: 400;
     letter-spacing: 0.3px;
@@ -72,6 +72,7 @@ body {
     z-index: 3;
     font-family: "Helvetica Neue", Arial, sans-serif;
 }
+
 
 @media (max-width: 600px) {
     .fragment {
