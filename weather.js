@@ -1,11 +1,11 @@
-// UPDATE
+// Manages weather data fetching and processing
 var WeatherManager = (function () {
     var SPEED_TO_PX = 1.0; // convertion from wind speed to visual pixels/sec
     var REFRESH = 15 * 60 * 1000; // refreshing every 15 minutes
 
     // Create a vector based on wind speed and direction
     function Vector(windSpeed, windDirection) {
-        // Distinguish between wind direction and blowing diection
+        // Distinguish between wind direction and blowing direction
         var blowingTo = (windDirection + 180) * Math.PI / 180.0;
         var vx = Math.sin(blowingTo) * windSpeed * SPEED_TO_PX; // pixels/sec
         var vy = -Math.cos(blowingTo) * windSpeed * SPEED_TO_PX; // negative because screen y grows downward

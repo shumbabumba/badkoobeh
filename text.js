@@ -15,10 +15,10 @@ function shuffle(text) {
     return text;
 }
 
-// TextManager: spawns and animates text fragments
-function TextManager(map, texts, originLatLng, options) {
+// Create constructor function that spawns and animates text fragments
+function TextManager(map, text, originLatLng, options) {
     this.map = map;
-    this.texts = shuffle(texts.slice()); // work on a shuffled copy
+    this.text = shuffle(text.slice()); // work on a shuffled copy
     this.origin = originLatLng; // {lat, lng}
     this.opts = Object.assign({
         spawnInterval: 1200, // ms
@@ -27,77 +27,76 @@ function TextManager(map, texts, originLatLng, options) {
         precipEffect: 0.35, // how strongly precipitation shortens lifespan
         speedJitter: 0.18 // fractional variation per fragment
     }, options || {});
-
+    // get map parameters for positioning
     this.containerRect = this.map.getContainer().getBoundingClientRect();
-    this.fragments = [];
-    this._nextIndex = 0;
-
-    // wind vectors
-    this.targetWind = { x: 0, y: 0 };
-    this.currentWind = { x: 0, y: 0 };
-
+    this.fragments = []; // active fragments
+    this._nextIndex = 0; // next fragment index in the shuffled text array
+    this.targetWind = { x: 0, y: 0 }; // new wind vector in pixels/sec
+    this.currentWind = { x: 0, y: 0 }; // current wind vector in pixels/sec
     this.currentPrecip = 0;
     this.currentRelativeHumidity = 0;
-
-    this._lastTime = performance.now();
-    this._accumulator = 0;
+    this._lastTime = performance.now(); 
+    this._accumulator = 0; 
     this._running = false;
 }
-
+// Spawn new text fragment
 TextManager.prototype._spawnFragment = function () {
-    if (this.fragments.length >= this.opts.maxFragments) return;
-    var data = this.texts[this._nextIndex++ % this.texts.length];
-    var content = (data && data.text !== undefined) ? String(data.text) : '';
-    var el = document.createElement('div');
-    el.className = 'fragment';
-    el.textContent = content;
-    el.style.position = 'absolute';
-    el.style.left = '0px';
-    el.style.top = '0px';
-    el.style.pointerEvents = 'none';
-    el.style.whiteSpace = 'nowrap';
+    if (this.fragments.length >= this.opts.maxFragments) return; // don't spawn more than maxFragments
+    var data = this.text[this._nextIndex++ % this.text.length]; // loop through text array
+    var content = (data && data.text !== undefined) ? String(data.text) : ''; // turn data.text into a string, default to empty string if undefined
+    var element = document.createElement('div'); // create new div element 
+    element.className = 'fragment'; // assign class for styling
+    element.textContent = content; // put fragment text inside div
+    element.style.position = 'absolute'; 
+    element.style.left = '0px';
+    element.style.top = '0px';
+    element.style.pointerEvents = 'none'; // no mouse interaction
+    element.style.whiteSpace = 'nowrap';
 
-    document.body.appendChild(el);
+    this.map.getContainer().appendChild(element); // add DOM element to map
+    // convert geographic coordinates into map container points
+    var point = this.map.latLngToContainerPoint([this.origin.latitude, this.origin.longitude]); 
+    var x = point.x; // x position
+    var y = point.y; // y position
 
-    // initial position = origin in container pixels
-    var point = this.map.latLngToContainerPoint([this.origin.latitude, this.origin.longitude]);
-    var rect = this.map.getContainer().getBoundingClientRect();
-    var x = rect.left + point.x;
-    var y = rect.top + point.y;
-
-    var speedJitter = 1 + (Math.random() * 2 - 1) * this.opts.speedJitter;
-    var lifespan = this.opts.baseLifespan / Math.max(0.2, (1 + this.currentPrecip * this.opts.precipEffect));
-
-    var frag = {
-        el: el,
-        x: x,
-        y: y,
-        vx: this.currentWind.x * speedJitter,
-        vy: this.currentWind.y * speedJitter,
-        createdAt: performance.now(),
-        lifespan: lifespan * 1000, // ms
-        jitter: speedJitter
+    var speedJitter = 1 + (Math.random() * 2 - 1) * this.opts.speedJitter; // randomize speed a bit for each fragment
+    // decay based on precipitation (HUMIDITY?)
+    var lifespan = this.opts.baseLifespan / Math.max(0.2, (1 + this.currentPrecip * this.opts.precipEffect)); 
+    
+    // create a fragment object to track its state
+    var fragment = {
+        element: element, // the DOM element for this fragment
+        x: x, // current x position
+        y: y, // current y position
+        vx: this.currentWind.x * speedJitter, // x velocity
+        vy: this.currentWind.y * speedJitter, // y velocity
+        createdAt: performance.now(), // track creation time
+        lifespan: lifespan * 1000, // lifespan in milliseconds
+        jitter: speedJitter // individual speed jitter 
     };
 
-    // place it initially
-    el.style.transform = 'translate(' + frag.x + 'px, ' + frag.y + 'px) translate(-50%,-50%)';
-    this.fragments.push(frag);
+    // place element at its initial position
+    element.style.transform = 'translate(' + fragment.x + 'px, ' + fragment.y + 'px)';
+    this.fragments.push(fragment); // push fragment to active fragments
 };
 
-TextManager.prototype._removeFragment = function (idx) {
-    var f = this.fragments[idx];
+// Remove fragment if it exists
+TextManager.prototype._removeFragment = function (index) {
+    var f = this.fragments[index];
     if (f) {
-        if (f.el && f.el.parentNode) f.el.parentNode.removeChild(f.el);
-        this.fragments.splice(idx, 1);
+        if (f.element && f.element.parentNode) f.element.parentNode.removeChild(f.element); // remove fragment visually
+        // remove fragment from active fragments array
+        this.fragments.splice(index, 1);
     }
 };
 
-TextManager.prototype.setWind = function (wind, precipitation, relativeHumidity) {
-    // wind: {x,y} in pixels/sec
+//
+TextManager.prototype.getWeather = function (wind, precipitation, relativeHumidity) {
     this.targetWind = wind || { x: 0, y: 0 };
     this.currentPrecip = precipitation || 0;
     this.currentRelativeHumidity = relativeHumidity || 0;
 };
+
 
 TextManager.prototype._update = function (now) {
     var dt = (now - this._lastTime) / 1000.0; // seconds
@@ -133,15 +132,15 @@ TextManager.prototype._update = function (now) {
         var opacity = Math.max(0, 1 - lifeRatio);
         var scale = 1 - 0.12 * Math.min(1, lifeRatio);
 
-        f.el.style.transform = 'translate(' + f.x + 'px, ' + f.y + 'px) translate(-50%,-50%) scale(' + scale + ')';
-        f.el.style.opacity = opacity;
+        f.element.style.transform = 'translate(' + f.x + 'px, ' + f.y + 'px) translate(-50%,-50%) scale(' + scale + ')';
+        f.element.style.opacity = opacity;
 
         // optional: precipitation can add a slight blur / transform by adjusting filter
         if (this.currentPrecip > 0.5) {
             var blur = Math.min(2.2, this.currentPrecip * 0.6);
-            f.el.style.filter = 'blur(' + blur + 'px)';
+            f.element.style.filter = 'blur(' + blur + 'px)';
         } else {
-            f.el.style.filter = '';
+            f.element.style.filter = '';
         }
 
         if (age > f.lifespan) {
@@ -172,40 +171,6 @@ TextManager.prototype.stop = function () {
     }
 };
 
-// Main app flow
-Promise.all([fetchJSON('files/locations.json'), fetchJSON('files/text.json')]).then(function (results) {
-    var locations = results[0];
-    var texts = results[1];
 
-    if (!Array.isArray(locations) || locations.length === 0) {
-        console.error('No locations found');
-        return;
-    }
-    if (!Array.isArray(texts) || texts.length === 0) {
-        console.error('No text fragments found');
-        return;
-    }
-
-    // random origin selection (one of the 77 locations)
-    var origin = locations[Math.floor(Math.random() * locations.length)];
-    console.log('Selected origin', origin);
-
-    // center map on origin with a comfortable zoom
-    map.setView([origin.latitude, origin.longitude], 13);
-
-    // create text manager
-    var tm = new TextManager(map, texts, { latitude: origin.latitude, longitude: origin.longitude });
-    tm.start();
-
-    // create weather manager and wire updates into text manager
-    var ws = new WeatherManager(origin.latitude, origin.longitude, function (current) {
-        // current.vector is in pixels/sec already
-        tm.setWind(current.vector, current.precipitation, current.relativeHumidity);
-    });
-    ws.start();
-
-}).catch(function (err) {
-    console.error('Startup error', err);
-});
 
     
