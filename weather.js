@@ -30,13 +30,20 @@ var WeatherManager = (function () {
     }
 
     WeatherManager.prototype._applyApi = function (data) {
-        var currentWeather = data.current_weather || {};
-        var windSpeed = currentWeather.windspeed || 0; // usually km/h
-        var windDirection = currentWeather.winddirection || 0; // degrees
-        var precipitation = currentWeather.precipitation || 0; // mm
-        var relativeHumidity = currentWeather.relative_humidity || 0; // %
-        var temperature = currentWeather.temperature || 0; // °C
+        var currentWeather = data.current || {};
+        var windSpeed = currentWeather.wind_speed_10m || 0;
+        var windDirection = currentWeather.wind_direction_10m || 0;
+        var precipitation = currentWeather.precipitation || 0;
+        var relativeHumidity = currentWeather.relative_humidity_2m || 0;
+        var temperature = currentWeather.temperature_2m || 0;
         var vector = Vector(windSpeed, windDirection);
+        
+        console.log('Weather', {
+            speed: windSpeed,
+            direction: windDirection,
+            vector: vector
+        });
+
         this.current = {
             vector: vector,
             windSpeed: windSpeed,

@@ -90,26 +90,26 @@ TextManager.prototype._removeFragment = function (index) {
     }
 };
 
-//
+// Get weather data
 TextManager.prototype.getWeather = function (wind, precipitation, relativeHumidity) {
     this.targetWind = wind || { x: 0, y: 0 };
     this.currentPrecip = precipitation || 0;
     this.currentRelativeHumidity = relativeHumidity || 0;
 };
 
-
+// Animate fragments
 TextManager.prototype._update = function (now) {
-    var dt = (now - this._lastTime) / 1000.0; // seconds
-    this._lastTime = now;
+    var deltaTime = (now - this._lastTime) / 1000.0; // time that has passed since last _update call in seconds
+    this._lastTime = now; // update last time to now for next _update call
 
     // smooth currentWind -> targetWind
-    var smoothTau = 2.5; // seconds to approach new wind
-    var alpha = Math.min(1, dt / smoothTau);
-    this.currentWind.x += (this.targetWind.x - this.currentWind.x) * alpha;
-    this.currentWind.y += (this.targetWind.y - this.currentWind.y) * alpha;
+    var smoothTau = 2.5; // seconds it takes to approach new wind direction
+    var alpha = Math.min(1, deltaTime / smoothTau);
+    this.currentWind.x += (this.targetWind.x - this.currentWind.x) * alpha; // gradual movement on x axis
+    this.currentWind.y += (this.targetWind.y - this.currentWind.y) * alpha; // gradual movement on y axis
 
-    // spawning accumulator
-    this._accumulator += dt * 1000;
+    // spawn new fragment when accumulated time exceeds preset interval
+    this._accumulator += deltaTime * 1000;
     while (this._accumulator >= this.opts.spawnInterval) {
         this._accumulator -= this.opts.spawnInterval;
         this._spawnFragment();
@@ -122,8 +122,8 @@ TextManager.prototype._update = function (now) {
         f.vx = this.currentWind.x * f.jitter;
         f.vy = this.currentWind.y * f.jitter;
 
-        f.x += f.vx * dt;
-        f.y += f.vy * dt;
+        f.x += f.vx * deltaTime;
+        f.y += f.vy * deltaTime;
 
         var age = now - f.createdAt;
         var lifeRatio = age / f.lifespan;
@@ -132,7 +132,7 @@ TextManager.prototype._update = function (now) {
         var opacity = Math.max(0, 1 - lifeRatio);
         var scale = 1 - 0.12 * Math.min(1, lifeRatio);
 
-        f.element.style.transform = 'translate(' + f.x + 'px, ' + f.y + 'px) translate(-50%,-50%) scale(' + scale + ')';
+        f.element.style.transform = 'translate(' + f.x + 'px, ' + f.y + 'px)  scale(' + scale + ')';
         f.element.style.opacity = opacity;
 
         // optional: precipitation can add a slight blur / transform by adjusting filter
