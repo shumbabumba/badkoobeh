@@ -26,7 +26,7 @@ Promise.all([fetchJSON('files/locations.json'), fetchJSON('files/text.json')]).t
     // Create weather manager and wire updates into text manager
     var weatherManager = new WeatherManager(origin.latitude, origin.longitude, function (current) {
         // current.vector is in pixels/sec already
-        textManager.getWeather(current.vector, current.precipitation, current.relativeHumidity);
+        textManager.getWeather(current.vector, current.precipitation);
     });
     weatherManager.start();
 

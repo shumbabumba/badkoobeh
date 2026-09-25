@@ -24,17 +24,12 @@ function TextManager(map, text, originLatLng, options) {
         spawnInterval: 1200, // ms
         maxFragments: 80,
         baseLifespan: 25.0, // seconds
-        precipEffect: 0.35, // how strongly precipitation shortens lifespan
         speedJitter: 0.18 // fractional variation per fragment
     }, options || {});
-    // get map parameters for positioning
-    this.containerRect = this.map.getContainer().getBoundingClientRect();
     this.fragments = []; // active fragments
     this._nextIndex = 0; // next fragment index in the shuffled text array
     this.targetWind = { x: 0, y: 0 }; // new wind vector in pixels/sec
     this.currentWind = { x: 0, y: 0 }; // current wind vector in pixels/sec
-    this.currentPrecip = 0;
-    this.currentRelativeHumidity = 0;
     this._lastTime = performance.now(); 
     this._accumulator = 0; 
     this._running = false;
@@ -60,8 +55,7 @@ TextManager.prototype._spawnFragment = function () {
     var y = point.y; // y position
 
     var speedJitter = 1 + (Math.random() * 2 - 1) * this.opts.speedJitter; // randomize speed a bit for each fragment
-    // decay based on precipitation (HUMIDITY?)
-    var lifespan = this.opts.baseLifespan / Math.max(0.2, (1 + this.currentPrecip * this.opts.precipEffect)); 
+    var lifespan = this.opts.baseLifespan / 0.2; 
     
     // create a fragment object to track its state
     var fragment = {
@@ -91,10 +85,8 @@ TextManager.prototype._removeFragment = function (index) {
 };
 
 // Get weather data
-TextManager.prototype.getWeather = function (wind, precipitation, relativeHumidity) {
+TextManager.prototype.getWeather = function (wind) {
     this.targetWind = wind || { x: 0, y: 0 };
-    this.currentPrecip = precipitation || 0;
-    this.currentRelativeHumidity = relativeHumidity || 0;
 };
 
 // Animate fragments
@@ -121,27 +113,18 @@ TextManager.prototype._update = function (now) {
         // update velocity to match current wind but keep fragment's jitter
         f.vx = this.currentWind.x * f.jitter;
         f.vy = this.currentWind.y * f.jitter;
-
+        // update fragment's position
         f.x += f.vx * deltaTime;
         f.y += f.vy * deltaTime;
-
-        var age = now - f.createdAt;
-        var lifeRatio = age / f.lifespan;
-
-        // opacity and scale
+        var age = now - f.createdAt; // how old fragment is
+        var lifeRatio = age / f.lifespan; // how far through its lifespan fragment is
+        // fragment fades out
         var opacity = Math.max(0, 1 - lifeRatio);
+        // shrink text size
         var scale = 1 - 0.12 * Math.min(1, lifeRatio);
 
         f.element.style.transform = 'translate(' + f.x + 'px, ' + f.y + 'px)  scale(' + scale + ')';
         f.element.style.opacity = opacity;
-
-        // optional: precipitation can add a slight blur / transform by adjusting filter
-        if (this.currentPrecip > 0.5) {
-            var blur = Math.min(2.2, this.currentPrecip * 0.6);
-            f.element.style.filter = 'blur(' + blur + 'px)';
-        } else {
-            f.element.style.filter = '';
-        }
 
         if (age > f.lifespan) {
             this._removeFragment(i);
@@ -170,7 +153,3 @@ TextManager.prototype.stop = function () {
         this._removeFragment(i);
     }
 };
-
-
-
-    

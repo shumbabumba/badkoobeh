@@ -20,22 +20,14 @@ var WeatherManager = (function () {
         this.current = {
             vector: { x: 0, y: 0 },
             windSpeed: 0,
-            windDirection: 0,
-            precipitation: 0,
-            relativeHumidity: 0,
-            temperature: 0
+            windDirection: 0
         };
-        // continue 
-        this._stopped = false;
     }
 
     WeatherManager.prototype._applyApi = function (data) {
         var currentWeather = data.current || {};
         var windSpeed = currentWeather.wind_speed_10m || 0;
         var windDirection = currentWeather.wind_direction_10m || 0;
-        var precipitation = currentWeather.precipitation || 0;
-        var relativeHumidity = currentWeather.relative_humidity_2m || 0;
-        var temperature = currentWeather.temperature_2m || 0;
         var vector = Vector(windSpeed, windDirection);
         
         console.log('Weather', {
@@ -47,16 +39,13 @@ var WeatherManager = (function () {
         this.current = {
             vector: vector,
             windSpeed: windSpeed,
-            windDirection: windDirection,
-            precipitation: precipitation,
-            relativeHumidity: relativeHumidity,
-            temperature: temperature
+            windDirection: windDirection
         };
         if (typeof this.onUpdate === 'function') this.onUpdate(this.current);
     };
 
     WeatherManager.prototype.update = function () {
-        var url = 'https://api.open-meteo.com/v1/forecast?latitude=' + encodeURIComponent(this.lat) + '&longitude=' + encodeURIComponent(this.lon) + '&current=temperature_2m,wind_speed_10m,wind_direction_10m,precipitation,relative_humidity_2m' + '&wind_speed_unit=ms' + '&timezone=auto';
+        var url = 'https://api.open-meteo.com/v1/forecast?latitude=' + encodeURIComponent(this.lat) + '&longitude=' + encodeURIComponent(this.lon) + '&wind_speed_10m,wind_direction_10m' + '&wind_speed_unit=ms' + '&timezone=auto';
         fetch(url).then(function (r) { return r.json(); }).then((data) => {
             this._applyApi(data);
         }).catch(function (err) {
