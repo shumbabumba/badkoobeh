@@ -45,7 +45,7 @@ var WeatherManager = (function () {
     };
 
     WeatherManager.prototype.update = function () {
-        var url = 'https://api.open-meteo.com/v1/forecast?latitude=' + encodeURIComponent(this.lat) + '&longitude=' + encodeURIComponent(this.lon) + '&wind_speed_10m,wind_direction_10m' + '&wind_speed_unit=ms' + '&timezone=auto';
+        var url = 'https://api.open-meteo.com/v1/forecast?latitude=' + encodeURIComponent(this.lat) + '&longitude=' + encodeURIComponent(this.lon) + '&current=wind_speed_10m,wind_direction_10m' + '&wind_speed_unit=ms' + '&timezone=auto';
         fetch(url).then(function (r) { return r.json(); }).then((data) => {
             this._applyApi(data);
         }).catch(function (err) {
