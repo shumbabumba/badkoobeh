@@ -1,14 +1,14 @@
 // Manages weather data fetching and processing
-var WeatherManager = (function () {
-    var SPEED_TO_PX = 1.0; // convertion from wind speed to visual pixels/sec
-    var REFRESH = 15 * 60 * 1000; // refreshing every 15 minutes
+const WeatherManager = (function () {
+    const SPEED_TO_PX = 1.0; // convertion from wind speed to visual pixels/sec
+    const REFRESH = 15 * 60 * 1000; // refreshing every 15 minutes
 
     // Create a vector based on wind speed and direction
     function Vector(windSpeed, windDirection) {
         // Distinguish between wind direction and blowing direction
-        var blowingTo = (windDirection + 180) * Math.PI / 180.0;
-        var vx = Math.sin(blowingTo) * windSpeed * SPEED_TO_PX; // pixels/sec
-        var vy = -Math.cos(blowingTo) * windSpeed * SPEED_TO_PX; // negative because screen y grows downward
+        const blowingTo = (windDirection + 180) * Math.PI / 180.0;
+        const vx = Math.sin(blowingTo) * windSpeed * SPEED_TO_PX; // pixels/sec
+        const vy = -Math.cos(blowingTo) * windSpeed * SPEED_TO_PX; // negative because screen y grows downward
         return { x: vx, y: vy };
     }
 
@@ -24,11 +24,12 @@ var WeatherManager = (function () {
         };
     }
 
+    // fetch wind data from Open-Meteo API and apply it
     WeatherManager.prototype._applyApi = function (data) {
-        var currentWeather = data.current || {};
-        var windSpeed = currentWeather.wind_speed_10m || 0;
-        var windDirection = currentWeather.wind_direction_10m || 0;
-        var vector = Vector(windSpeed, windDirection);
+        const currentWeather = data.current || {};
+        const windSpeed = currentWeather.wind_speed_10m || 0;
+        const windDirection = currentWeather.wind_direction_10m || 0;
+        const vector = Vector(windSpeed, windDirection);
         
         console.log('Weather', {
             speed: windSpeed,
@@ -45,7 +46,7 @@ var WeatherManager = (function () {
     };
 
     WeatherManager.prototype.update = function () {
-        var url = 'https://api.open-meteo.com/v1/forecast?latitude=' + encodeURIComponent(this.lat) + '&longitude=' + encodeURIComponent(this.lon) + '&current=wind_speed_10m,wind_direction_10m' + '&wind_speed_unit=ms' + '&timezone=auto';
+        const url = 'https://api.open-meteo.com/v1/forecast?latitude=' + encodeURIComponent(this.lat) + '&longitude=' + encodeURIComponent(this.lon) + '&current=wind_speed_10m,wind_direction_10m' + '&wind_speed_unit=ms' + '&timezone=auto';
         fetch(url).then(function (r) { return r.json(); }).then((data) => {
             this._applyApi(data);
         }).catch(function (err) {
@@ -54,7 +55,7 @@ var WeatherManager = (function () {
     };
 
     WeatherManager.prototype.start = function () {
-        var self = this;
+        const self = this;
         this.update();
         this._interval = setInterval(function () { self.update(); }, REFRESH);
     };

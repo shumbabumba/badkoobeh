@@ -1,15 +1,7 @@
-// Helper function to fetch JSON and handle errors
-function fetchJSON(path) {
-    return fetch(path).then(function (r) {
-        if (!r.ok) throw new Error('Failed to fetch ' + path + ': ' + r.status);
-        return r.json();
-    });
-}
-
 // Randomize sequence of text fragments using Fisher-Yates shuffle
 function shuffle(text) {
-    for (var i = text.length - 1; i > 0; i--) {
-        var j = Math.floor(Math.random() * (i + 1));
+    for (let i = text.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
         [text[i], text[j]] = [text[j], text[i]];
     }
     return text;
@@ -22,7 +14,7 @@ function TextManager(map, text, originLatLng, options) {
     this.origin = originLatLng; // {lat, lng}
     this.opts = Object.assign({
         spawnInterval: 1200, // ms
-        maxFragments: 80,
+        maxFragments: 80, // max number of fragments on screen
         baseLifespan: 25.0, // seconds
         speedJitter: 0.18 // fractional variation per fragment
     }, options || {});
@@ -31,15 +23,15 @@ function TextManager(map, text, originLatLng, options) {
     this.targetWind = { x: 0, y: 0 }; // new wind vector in pixels/sec
     this.currentWind = { x: 0, y: 0 }; // current wind vector in pixels/sec
     this._lastTime = performance.now(); 
-    this._accumulator = 0; 
+    this._accumulator = 0; // accumulated time 
     this._running = false;
 }
 // Spawn new text fragment
 TextManager.prototype._spawnFragment = function () {
     if (this.fragments.length >= this.opts.maxFragments) return; // don't spawn more than maxFragments
-    var data = this.text[this._nextIndex++ % this.text.length]; // loop through text array
-    var content = (data && data.text !== undefined) ? String(data.text) : ''; // turn data.text into a string, default to empty string if undefined
-    var element = document.createElement('div'); // create new div element 
+    const data = this.text[this._nextIndex++ % this.text.length]; // loop through text array
+    const content = (data && data.text !== undefined) ? String(data.text) : ''; // turn data.text into a string, default to empty string if undefined
+    const element = document.createElement('div'); // create new div element 
     element.className = 'fragment'; // assign class for styling
     element.textContent = content; // put fragment text inside div
     element.style.position = 'absolute'; 
@@ -50,15 +42,15 @@ TextManager.prototype._spawnFragment = function () {
 
     this.map.getContainer().appendChild(element); // add DOM element to map
     // convert geographic coordinates into map container points
-    var point = this.map.latLngToContainerPoint([this.origin.latitude, this.origin.longitude]); 
-    var x = point.x; // x position
-    var y = point.y; // y position
+    const point = this.map.latLngToContainerPoint([this.origin.latitude, this.origin.longitude]); 
+    const x = point.x; // x position
+    const y = point.y; // y position
 
-    var speedJitter = 1 + (Math.random() * 2 - 1) * this.opts.speedJitter; // randomize speed a bit for each fragment
-    var lifespan = this.opts.baseLifespan / 0.2; 
+    const speedJitter = 1 + (Math.random() * 2 - 1) * this.opts.speedJitter; // randomize speed a bit for each fragment
+    const lifespan = this.opts.baseLifespan / 0.2; 
     
     // create a fragment object to track its state
-    var fragment = {
+    const fragment = {
         element: element, // the DOM element for this fragment
         x: x, // current x position
         y: y, // current y position
@@ -76,7 +68,7 @@ TextManager.prototype._spawnFragment = function () {
 
 // Remove fragment if it exists
 TextManager.prototype._removeFragment = function (index) {
-    var f = this.fragments[index];
+    const f = this.fragments[index];
     if (f) {
         if (f.element && f.element.parentNode) f.element.parentNode.removeChild(f.element); // remove fragment visually
         // remove fragment from active fragments array
@@ -91,12 +83,12 @@ TextManager.prototype.getWeather = function (wind) {
 
 // Animate fragments
 TextManager.prototype._update = function (now) {
-    var deltaTime = (now - this._lastTime) / 1000.0; // time that has passed since last _update call in seconds
+    const deltaTime = (now - this._lastTime) / 1000.0; // time that has passed since last _update call in seconds
     this._lastTime = now; // update last time to now for next _update call
 
     // smooth currentWind -> targetWind
-    var smoothTau = 2.5; // seconds it takes to approach new wind direction
-    var alpha = Math.min(1, deltaTime / smoothTau);
+    const smoothTau = 2.5; // seconds it takes to approach new wind direction
+    const alpha = Math.min(1, deltaTime / smoothTau);
     this.currentWind.x += (this.targetWind.x - this.currentWind.x) * alpha; // gradual movement on x axis
     this.currentWind.y += (this.targetWind.y - this.currentWind.y) * alpha; // gradual movement on y axis
 
@@ -108,48 +100,48 @@ TextManager.prototype._update = function (now) {
     }
 
     // update fragments
-    for (var i = this.fragments.length - 1; i >= 0; i--) {
-        var f = this.fragments[i];
+    for (let i = this.fragments.length - 1; i >= 0; i--) {
+        const f = this.fragments[i];
         // update velocity to match current wind but keep fragment's jitter
         f.vx = this.currentWind.x * f.jitter;
         f.vy = this.currentWind.y * f.jitter;
         // update fragment's position
         f.x += f.vx * deltaTime;
         f.y += f.vy * deltaTime;
-        var age = now - f.createdAt; // how old fragment is
-        var lifeRatio = age / f.lifespan; // how far through its lifespan fragment is
+        const age = now - f.createdAt; // how old fragment is
+        const lifeRatio = age / f.lifespan; // how far through its lifespan fragment is
         // fragment fades out
-        var opacity = Math.max(0, 1 - lifeRatio);
+        const opacity = Math.max(0, 1 - lifeRatio);
         // shrink text size
-        var scale = 1 - 0.12 * Math.min(1, lifeRatio);
-
+        const scale = 1 - 0.12 * Math.min(1, lifeRatio);
+        //  move the DOM element to its calculated position and apply scale to it
         f.element.style.transform = 'translate(' + f.x + 'px, ' + f.y + 'px)  scale(' + scale + ')';
-        f.element.style.opacity = opacity;
-
+        f.element.style.opacity = opacity; // apply opacity to the DOM element
+        // remove fragment once it reaches its lifespan
         if (age > f.lifespan) {
             this._removeFragment(i);
         }
     }
 };
 
+// Start animation loop
 TextManager.prototype.start = function () {
-    if (this._running) return;
-    this._running = true;
-    this._lastTime = performance.now();
-    var self = this;
-
-    function frame(now) {
-        if (!self._running) return;
-        self._update(now);
-        requestAnimationFrame(frame);
+    if (this._running) return; // exit if animation is already running
+    this._running = true; // mark animation as running
+    this._lastTime = performance.now(); // record starting time
+    const frame = (now) => {
+        if (!this._running) return; // exit if animation has been stopped 
+        this._update(now);
+        requestAnimationFrame(frame); // schedule next frame
     }
-    requestAnimationFrame(frame);
+    requestAnimationFrame(frame); // start animation loop
 };
 
+// Stop animation loop
 TextManager.prototype.stop = function () {
-    this._running = false;
+    this._running = false; // mark animation as stopped
     // remove existing fragments
-    for (var i = this.fragments.length - 1; i >= 0; i--) {
+    for (let i = this.fragments.length - 1; i >= 0; i--) {
         this._removeFragment(i);
     }
 };

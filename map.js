@@ -1,5 +1,5 @@
 // Create a Leaflet map with no user interaction
-var map = L.map('map', {
+const map = L.map('map', {
     zoomControl: false,
     dragging: false,
     touchZoom: false,
@@ -17,5 +17,5 @@ L.tileLayer('https://basemaps.cartocdn.com/rastertiles/dark_all/{z}/{x}/{y}.png?
 map.attributionControl.setPrefix(false);
 
 // Constrain the visible area to the Absheron peninsula + Caspian coastal region
-var worldBounds = L.latLngBounds([40.30, 49.70], [40.52, 50.20]);
+const worldBounds = L.latLngBounds([40.30, 49.70], [40.52, 50.20]);
 map.setMaxBounds(worldBounds);
