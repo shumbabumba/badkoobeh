@@ -4,10 +4,10 @@ const WeatherManager = (function () {
     const REFRESH = 15 * 60 * 1000; // refreshing every 15 minutes
 
     // Create a vector based on wind speed and direction
-    function Vector(windSpeed, windDirection) {
+    function toVector(windSpeed, windDirection) {
         // Distinguish between wind direction and blowing direction
         const blowingTo = (windDirection + 180) * Math.PI / 180.0;
-        const vx = Math.sin(blowingTo) * windSpeed * SPEED_TO_PX; // pixels/sec
+        const vx = Math.sin(blowingTo) * windSpeed * SPEED_TO_PX;
         const vy = -Math.cos(blowingTo) * windSpeed * SPEED_TO_PX; // negative because screen y grows downward
         return { x: vx, y: vy };
     }
@@ -29,9 +29,8 @@ const WeatherManager = (function () {
         const currentWeather = data.current || {};
         const windSpeed = currentWeather.wind_speed_10m || 0;
         const windDirection = currentWeather.wind_direction_10m || 0;
-        const vector = Vector(windSpeed, windDirection);
-        
-        console.log('Weather', {
+        const vector = toVector(windSpeed, windDirection);
+        console.log('Wind', {
             speed: windSpeed,
             direction: windDirection,
             vector: vector
