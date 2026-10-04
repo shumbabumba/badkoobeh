@@ -3,12 +3,14 @@ const WeatherManager = (function () {
     const SPEED_TO_PX = 1.0; // convertion from wind speed to visual pixels/sec
     const REFRESH = 15 * 60 * 1000; // refreshing every 15 minutes
 
-    // Create a vector based on wind speed and direction
-    function Vector(windSpeed, windDirection) {
-        // Distinguish between wind direction and blowing direction
+    // Open-Meteo reports the geographic direction the wind comes FROM:
+    // 0° is north, 90° is east, 180° is south, and 270° is west. Leaflet's
+    // default, north-up orientation uses that same geographic reference.
+    function toVector(windSpeed, windDirection) {
+        // Reverse the "from" bearing to get the direction the text travels.
         const blowingTo = (windDirection + 180) * Math.PI / 180.0;
-        const vx = Math.sin(blowingTo) * windSpeed * SPEED_TO_PX; // pixels/sec
-        const vy = -Math.cos(blowingTo) * windSpeed * SPEED_TO_PX; // negative because screen y grows downward
+        const vx = Math.sin(blowingTo) * windSpeed * SPEED_TO_PX;
+        const vy = -Math.cos(blowingTo) * windSpeed * SPEED_TO_PX; // screen y increases southward
         return { x: vx, y: vy };
     }
 
@@ -29,7 +31,7 @@ const WeatherManager = (function () {
         const currentWeather = data.current || {};
         const windSpeed = currentWeather.wind_speed_10m || 0;
         const windDirection = currentWeather.wind_direction_10m || 0;
-        const vector = Vector(windSpeed, windDirection);
+        const vector = toVector(windSpeed, windDirection);
         
         console.log('Weather', {
             speed: windSpeed,
