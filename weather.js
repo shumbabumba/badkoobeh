@@ -44,6 +44,7 @@ const WeatherManager = (function () {
         if (typeof this.onUpdate === 'function') this.onUpdate(this.current);
     };
 
+    // Fetch wind data from Open-Meteo API
     WeatherManager.prototype.update = function () {
         const url = 'https://api.open-meteo.com/v1/forecast?latitude=' + encodeURIComponent(this.lat) + '&longitude=' + encodeURIComponent(this.lon) + '&current=wind_speed_10m,wind_direction_10m' + '&wind_speed_unit=ms' + '&timezone=auto';
         fetch(url).then(function (r) { return r.json(); }).then((data) => {
@@ -53,9 +54,11 @@ const WeatherManager = (function () {
         });
     };
 
+    // Start WeatherManager by fetching wind data
     WeatherManager.prototype.start = function () {
         const self = this;
         this.update();
+        // set interval to update wind data every REFRESH milliseconds (15 minutes)
         this._interval = setInterval(function () { self.update(); }, REFRESH);
     };
 

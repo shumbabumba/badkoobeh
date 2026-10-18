@@ -15,7 +15,7 @@ function TextManager(map, text, originLatLng, options) {
     this.opts = Object.assign({
         spawnInterval: 1800, // ms
         maxFragments: 80, // max number of fragments on screen
-        baseLifespan: 25.0, // seconds
+        baseLifespan: 100.0, // seconds
         speedJitter: 0.50 // fractional variation per fragment
     }, options || {});
     this.fragments = []; // active fragments
