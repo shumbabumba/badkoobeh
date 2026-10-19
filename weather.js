@@ -4,10 +4,10 @@ const WeatherManager = (function () {
     const REFRESH = 15 * 60 * 1000; // refreshing every 15 minutes
 
     // Create a vector based on wind speed and direction
-    function toVector(windSpeed, windDirection) {
+    function Vector(windSpeed, windDirection) {
         // Distinguish between wind direction and blowing direction
         const blowingTo = (windDirection + 180) * Math.PI / 180.0;
-        const vx = Math.sin(blowingTo) * windSpeed * SPEED_TO_PX;
+        const vx = Math.sin(blowingTo) * windSpeed * SPEED_TO_PX; // pixels/sec
         const vy = -Math.cos(blowingTo) * windSpeed * SPEED_TO_PX; // negative because screen y grows downward
         return { x: vx, y: vy };
     }
@@ -29,8 +29,9 @@ const WeatherManager = (function () {
         const currentWeather = data.current || {};
         const windSpeed = currentWeather.wind_speed_10m || 0;
         const windDirection = currentWeather.wind_direction_10m || 0;
-        const vector = toVector(windSpeed, windDirection);
-        console.log('Wind', {
+        const vector = Vector(windSpeed, windDirection);
+        
+        console.log('Weather', {
             speed: windSpeed,
             direction: windDirection,
             vector: vector
@@ -44,7 +45,6 @@ const WeatherManager = (function () {
         if (typeof this.onUpdate === 'function') this.onUpdate(this.current);
     };
 
-    // Fetch wind data from Open-Meteo API
     WeatherManager.prototype.update = function () {
         const url = 'https://api.open-meteo.com/v1/forecast?latitude=' + encodeURIComponent(this.lat) + '&longitude=' + encodeURIComponent(this.lon) + '&current=wind_speed_10m,wind_direction_10m' + '&wind_speed_unit=ms' + '&timezone=auto';
         fetch(url).then(function (r) { return r.json(); }).then((data) => {
@@ -54,11 +54,9 @@ const WeatherManager = (function () {
         });
     };
 
-    // Start WeatherManager by fetching wind data
     WeatherManager.prototype.start = function () {
         const self = this;
         this.update();
-        // set interval to update wind data every REFRESH milliseconds (15 minutes)
         this._interval = setInterval(function () { self.update(); }, REFRESH);
     };
 
