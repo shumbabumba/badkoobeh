@@ -55,7 +55,7 @@ body {
 /* Text fragment styling - simple, high-contrast, preserves Azerbaijani Unicode */
 .fragment {
     color: #ffffff;
-    font-size: 10px;
+    font-size: 12px;
     line-height: 1;
     font-weight: 400;
     letter-spacing: 0.3px;
