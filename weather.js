@@ -1,459 +1,374 @@
-// Define the shared wind-data service, which fetches one grid for all fragments.
+// Define the shared wind-data service, which fetches one grid for all fragments
 const WeatherManager = (function () {
-    // Use Open-Meteo's ECMWF endpoint as the weather-data source.
-    const API_URL = 'https://api.open-meteo.com/v1/ecmwf';
-    // Set the requested spacing between geographic weather sample points to nine kilometres.
+    // Set the requested spacing between geographic weather sample points to nine kilometres
     const MODEL_GRID_SPACING_METERS = 9000;
-    // Use Earth's average radius when estimating distances between nearby coordinates.
+    // Use Earth's average radius when estimating distances between nearby coordinates
     const EARTH_RADIUS_METERS = 6371000;
-    // Refresh the shared weather grid every fifteen minutes.
-    const REFRESH_INTERVAL = 15 * 60 * 1000;
-    // Request the next forty-eight hours of hourly forecast values.
-    const FORECAST_HOURS = 48;
+    // Refresh the shared weather grid every hour
+    const REFRESH_INTERVAL = 60 * 60 * 1000;
+    // Degrees to meters conversion factor for latitude, which is constant everywhere on Earth
+    const METERS_PER_DEGREE_LATITUDE = 111320;
+    // When two locations are within this distance, they are considered the same for wind-relative positioning
+    const SAME_LOCATION_THRESHOLD_METERS = 1;
 
-    // Build the geographic sample-point grid covering and padding the map territory.
+
+    // Build the geographic sample-point grid covering and padding the map territory 
     function buildGrid(territoryBounds) {
-        // Read the southwest corner of the map's geographic bounds.
+        // Read territory's corners
         const southWest = territoryBounds.getSouthWest();
-        // Read the northeast corner of the map's geographic bounds.
         const northEast = territoryBounds.getNorthEast();
-        // Convert the requested nine-kilometre spacing into approximate degrees of latitude.
-        const latitudeStep = MODEL_GRID_SPACING_METERS / 111320;
-        // Estimate the territory's middle latitude for longitude-distance conversion.
+        // Convert nine-kilometres into approximate degrees of latitude
+        const latitudeDegree = MODEL_GRID_SPACING_METERS / METERS_PER_DEGREE_LATITUDE;
+        // Estimate the territory's middle latitude for longitude-distance conversion
         const middleLatitude = (southWest.lat + northEast.lat) / 2;
-        // Convert nine kilometres into approximate degrees of longitude at the middle latitude.
-        const longitudeStep = MODEL_GRID_SPACING_METERS /
-            (111320 * Math.cos(middleLatitude * Math.PI / 180));
-        // Create the array that will hold every requested latitude-longitude point.
+        // Convert nine kilometres into approximate degrees of longitude at the middle latitude
+        const longitudeDegree = MODEL_GRID_SPACING_METERS /
+            (METERS_PER_DEGREE_LATITUDE * Math.cos(middleLatitude * Math.PI / 180));
+        // Create array that will hold every requested latitude-longitude point
         const points = [];
-        // Extend the grid one latitude step below the territory so edge fragments have nearby samples.
-        const minLatitude = southWest.lat - latitudeStep;
-        // Extend the grid one latitude step above the territory so edge fragments have nearby samples.
-        const maxLatitude = northEast.lat + latitudeStep;
-        // Extend the grid one longitude step west of the territory for edge coverage.
-        const minLongitude = southWest.lng - longitudeStep;
-        // Extend the grid one longitude step east of the territory for edge coverage.
-        const maxLongitude = northEast.lng + longitudeStep;
-
-        // Visit each latitude row, including a small tolerance for the final step.
-        for (let latitude = minLatitude; latitude <= maxLatitude + latitudeStep / 2; latitude += latitudeStep) {
-            // Visit each longitude position in the current latitude row.
-            for (let longitude = minLongitude; longitude <= maxLongitude + longitudeStep / 2; longitude += longitudeStep) {
-                // Add the current grid coordinate to the list of Open-Meteo requests.
+        // Add a buffer around the territory so edge fragments have nearby samples
+        const minLatitude = southWest.lat - latitudeDegree;
+        const maxLatitude = northEast.lat + latitudeDegree;
+        const minLongitude = southWest.lng - longitudeDegree;
+        const maxLongitude = northEast.lng + longitudeDegree;
+        // For each latititude row in the padded territory, generate a series of longitude points
+        for (let latitude = minLatitude; latitude <= maxLatitude + latitudeDegree / 2; latitude += latitudeDegree) {
+            for (let longitude = minLongitude; longitude <= maxLongitude + longitudeDegree / 2; longitude += longitudeDegree) {
+                // Add grid coordinate to the array of requested points 
                 points.push({ latitude: latitude, longitude: longitude });
-            // End the loop over longitudes for this row.
             }
-        // End the loop over latitude rows.
         }
-
-        // Return both the requested points and their outermost coordinate bounds.
+        // Return requested points and their outermost coordinate bounds
         return {
-            // Make all generated sample coordinates available to the weather manager.
             points: points,
             // Store coordinate limits used later to reject locations outside the grid.
             bounds: {
-                // Use the first generated point's latitude as the grid's lower bound.
+                // Grid's lower bound
                 minLatitude: points[0].latitude,
-                // Use the last generated point's latitude as the grid's upper bound.
+                // Grid's upper bound
                 maxLatitude: points[points.length - 1].latitude,
-                // Use the first generated point's longitude as the grid's western bound.
+                // Grid's western bound
                 minLongitude: points[0].longitude,
-                // Use the last generated point's longitude as the grid's eastern bound.
+                // Grid's eastern bound
                 maxLongitude: points[points.length - 1].longitude
-            // Finish the grid bounds object.
             }
-        // Finish the returned grid object.
         };
-    // End the grid-building helper.
     }
 
-    // Convert a wind speed and meteorological direction into eastward and northward components.
+    // Convert wind speed and direction into fragment-friendly eastward and northward components
     function toWindComponents(speed, direction) {
-        // Reject missing, non-numeric, or physically invalid negative wind speeds.
+        // Reject missing, invalid or negative wind speed
         if (!Number.isFinite(speed) || speed < 0) return null;
-        // Represent calm wind as a valid vector with no eastward or northward movement.
+        // Represent calm wind  with no eastward or northward movement
         if (speed === 0) return { east: 0, north: 0 };
-        // Reject a non-numeric direction when a nonzero speed needs an orientation.
+        // Reject non-numeric direction
         if (!Number.isFinite(direction)) return null;
-
-        // Open-Meteo reports the direction wind comes from, so the resulting components point where it blows toward.
-        // Convert the compass bearing from degrees to radians for JavaScript's trigonometric functions.
-        const radians = direction * Math.PI / 180;
-        // Return signed east-west and north-south wind speeds, both measured in metres per second.
+        // Convert degrees to radians for JavaScript's trigonometric functions
+        const radians = (direction * Math.PI)  / 180;
+        // Return east and north components with minus signs to reverse direction
         return {
-            // A negative sine accounts for meteorological bearings pointing from the wind's source.
             east: -speed * Math.sin(radians),
-            // A negative cosine accounts for meteorological bearings pointing from the wind's source.
             north: -speed * Math.cos(radians)
-        // Finish the vector returned to the caller.
         };
-    // End wind-direction conversion.
     }
 
-    // Find or interpolate one sample's wind vector at the requested time.
+    // Find or interpolate one sample's wind vector at the requested timestamp
     function getTimedVector(sample, timestamp) {
-        // Read the array of timestamps associated with this weather sample.
+        // Read the array of timestamps associated with this weather sample
         const times = sample.times;
-        // Return no estimate if the sample has no times or the request is outside its available range.
-        if (!times.length || timestamp < times[0] || timestamp > times[times.length - 1]) return null;
-
-        // Start the lower edge of a binary search at the first hourly value.
+        // Initialize the lower edge of a binary search at the first hourly value
         let low = 0;
-        // Start the upper edge of the search at the final hourly value.
+        // Initialize the upper edge of the search at the final hourly value
         let high = times.length - 1;
-        // Search the sorted timestamps until an exact match or the surrounding pair is found.
+        // Return no estimate if the sample has no times or the request is outside its available range
+        if (!times.length || timestamp < times[low] || timestamp > times[high]) return null;
+        // Search the sorted timestamps until an exact match or the surrounding pair is found
         while (low <= high) {
-            // Choose the middle index of the remaining search range.
+            // Choose the middle index of the remaining search range
             const middle = Math.floor((low + high) / 2);
-            // Check whether the middle weather value exactly matches the requested time.
+            // Check whether the middle weather value exactly matches the requested time
             if (times[middle] === timestamp) {
-                // Read the vector stored for this exact time.
+                // Read the vector stored for this exact time
                 const exact = sample.vectors[middle];
-                // Return a copy of the exact vector, or null if its data is missing.
+                // Return a copy of the exact vector, or null if its data is missing
                 return exact ? { east: exact.east, north: exact.north } : null;
-            // If the middle time is earlier than requested, continue searching the upper half.
             }
+            // If the middle time is earlier than requested, continue searching the upper half
             if (times[middle] < timestamp) low = middle + 1;
-            // Otherwise, continue searching the lower half of the time array.
+            // Else, continue searching the lower half of the time array
             else high = middle - 1;
-        // End the binary search after an exact value or insertion point is found.
         }
-
-        // The last index below the requested time is the earlier interpolation sample.
+        // If no match is found, the loop exits when high is the last index before the requested time 
+        // and low is the first index after it
         const beforeIndex = high;
-        // The first index above the requested time is the later interpolation sample.
         const afterIndex = low;
-        // Read the vector from the earlier time.
+        // Read the vector from the earlier and later time samples
         const before = sample.vectors[beforeIndex];
-        // Read the vector from the later time.
         const after = sample.vectors[afterIndex];
-        // Refuse interpolation if either neighboring time has missing wind data.
+        // Refuse interpolation if either sample is missing data
         if (!before || !after) return null;
-
-        // Calculate the requested time's fractional position between the two samples.
-        const ratio = (timestamp - times[beforeIndex]) /
-            (times[afterIndex] - times[beforeIndex]);
-        // Interpolate each vector component separately so compass angles are never averaged directly.
+        // Calculate the requested time's fractional position between two samples
+        const ratio = (timestamp - times[beforeIndex]) / (times[afterIndex] - times[beforeIndex]);
+        // Interpolate estimated east and north components between two samples
         return {
-            // Blend the eastward values according to how close the requested time is to each sample.
             east: before.east + (after.east - before.east) * ratio,
-            // Blend the northward values according to how close the requested time is to each sample.
             north: before.north + (after.north - before.north) * ratio
-        // Finish the interpolated wind vector.
         };
-    // End the time-interpolation helper.
     }
 
-    // Estimate straight-line distance in metres between a coordinate and a weather sample.
+    // Estimate straight-line distance in metres between given coordinate and nearest weather sample
     function distanceMeters(latitude, longitude, sample) {
-        // Find the average latitude and convert it to radians for longitude-distance scaling.
-        const middleLatitude = (latitude + sample.latitude) / 2 * Math.PI / 180;
-        // Approximate east-west separation, accounting for longitude lines narrowing toward the poles.
-        const east = (sample.longitude - longitude) * Math.PI / 180 *
-            EARTH_RADIUS_METERS * Math.cos(middleLatitude);
-        // Approximate north-south separation using Earth's radius and latitude difference.
-        const north = (sample.latitude - latitude) * Math.PI / 180 * EARTH_RADIUS_METERS;
-        // Combine the perpendicular east and north distances with the Pythagorean theorem.
+        // Find the average latitude and convert it to radians
+        const middleLatitude = (latitude + sample.latitude) / 2 * (Math.PI / 180);
+        // Approximate east-west and north-south separation, accounting for longitude lines narrowing toward the poles
+        const east = (sample.longitude - longitude) * (Math.PI / 180) * EARTH_RADIUS_METERS * Math.cos(middleLatitude);
+        const north = (sample.latitude - latitude) * (Math.PI / 180) * EARTH_RADIUS_METERS;
+        // Combine the perpendicular east and north distances with Pythagorean theorem
         return Math.sqrt(east * east + north * north);
-    // End the geographic distance helper.
     }
 
-    // Estimate how far valid returned sample cells cover around the requested grid.
+    // Open-Meteo may return snapped model cells that are farther apart than the requested points
+    // Estimate the returned Open-Meteo coverage radius based on the actual spacing of returned snapped model cells
+    // Account for difference between model grid spacing (9 km) and Open-Meteo's returned cell spacing
     function getCoverageRadiusMeters(samples) {
-        // Collect unique sample latitudes and sort them from south to north.
-        const latitudes = Array.from(new Set(samples.map(function (sample) { return sample.latitude; }))).sort(function (a, b) { return a - b; });
-        // Collect unique sample longitudes and sort them from west to east.
-        const longitudes = Array.from(new Set(samples.map(function (sample) { return sample.longitude; }))).sort(function (a, b) { return a - b; });
-        // Calculate the average sample latitude and convert it to radians.
-        const middleLatitude = samples.reduce(function (sum, sample) { return sum + sample.latitude; }, 0) /
-            samples.length * Math.PI / 180;
-
-        // Find the largest gap between sorted coordinates and convert it into metres.
+        // Collect unique sample latitudes and sort them in ascending order (from south to north)
+        const latitudes = Array.from(new Set(samples.map(function (sample) 
+            { return sample.latitude; }))).sort(function (a, b) 
+            { return a - b; });
+        // Collect unique sample longitudes and sort them in ascending order (from west to east)
+        const longitudes = Array.from(new Set(samples.map(function (sample) 
+            { return sample.longitude; }))).sort(function (a, b) 
+            { return a - b; });
+        // Calculate the average sample latitude of all weather samples in radians
+        const middleLatitude = samples.reduce(function (sum, sample)
+            { return sum + sample.latitude; }, 0) / samples.length * (Math.PI / 180);
+        // Find the largest gap between sorted sample coordinates in metres
         function largestGapMeters(values, metersPerDegree) {
-            // Begin with no measured gap between samples.
             let largestGap = 0;
-            // Compare each coordinate with the one immediately before it.
             for (let i = 1; i < values.length; i++) {
-                // Keep the largest coordinate gap seen so far, expressed in metres.
                 largestGap = Math.max(largestGap, (values[i] - values[i - 1]) * metersPerDegree);
-            // End the comparison of adjacent coordinates.
             }
-            // Use the measured largest gap, or the requested model spacing if there is only one coordinate.
+            // Use either the measured largest gap, or the requested model spacing if there is only one coordinate
             return largestGap || MODEL_GRID_SPACING_METERS;
-        // End the largest-gap helper.
         }
-
-        // Open-Meteo may return snapped model cells that are farther apart than the requested points.
-        // Base the valid search radius on the actual spacing of those returned cells.
-        const latitudeSpacing = largestGapMeters(latitudes, 111320);
-        // Convert longitude gaps using the average latitude because longitude distances vary by latitude.
-        const longitudeSpacing = largestGapMeters(longitudes, 111320 * Math.cos(middleLatitude));
-        // Return half the diagonal formed by the largest latitude and longitude sample gaps.
+        // Calculate the largest latitude and longitude gaps (they don't neccesarily belong to the same cell)
+        const latitudeSpacing = largestGapMeters(latitudes, METERS_PER_DEGREE_LATITUDE);
+        const longitudeSpacing = largestGapMeters(longitudes, METERS_PER_DEGREE_LATITUDE * Math.cos(middleLatitude)); 
+        // Estimate the maximum distance from any point to the nearest weather sample with the largest gap
         return Math.sqrt(latitudeSpacing * latitudeSpacing + longitudeSpacing * longitudeSpacing) / 2;
-    // End the coverage-radius helper.
     }
 
-    // Define one weather manager that owns the shared grid and its refresh timer.
+    // Create a single instance of weather manager with shared grid 
+    // From which all fragments can interpolate wind data
+    // Without each fragment making its own network requests to Open-Meteo 
     function WeatherManager(territoryBounds) {
-        // Build the requested grid and padded bounds for the map territory.
         const grid = buildGrid(territoryBounds);
-        // Keep the requested coordinate points used to construct each API request.
+        // Store coordinate points to be requested from Open-Meteo
         this.queryPoints = grid.points;
-        // Keep the outer bounds used to reject lookups outside the padded grid.
+        // Store outer edge coordinates
         this.bounds = grid.bounds;
-        // Start without any downloaded or usable wind samples.
+        // Initialize empty array of unique samples returned by Open-Meteo (cached)
         this.samples = [];
-        // Set an initial maximum distance for samples until returned-cell spacing is known.
+        // Set initial maximum interpolation distance for samples until returned-cell spacing is known
         this.maxInterpolationDistance = MODEL_GRID_SPACING_METERS * 1.5;
-        // Track the current network request so duplicate updates can share it.
+        // Track ongoing network request to avoid duplicate fetches 
         this._pending = null;
-        // Store the periodic refresh timer once the manager starts.
+        // Store the initial update result so repeated start calls share it.
+        this._startPromise = null;
+        // Track refresh timer
         this._interval = null;
-    // End the WeatherManager constructor.
     }
 
-    // Convert an Open-Meteo response into the manager's deduplicated sample format.
+    // Convert an Open-Meteo response into manager's internal sample grid format
     WeatherManager.prototype._applyApi = function (response) {
-        // Normalize one result or multiple results into an array for common processing.
+        // Make sure response is an array, turn it into one if Open-Meteo returns a single object
         const entries = Array.isArray(response) ? response : [response];
-        // Check that Open-Meteo returned one entry for each requested grid coordinate.
+        // Issue an error if number of returned entries do not match number of requested coordinates
         if (entries.length !== this.queryPoints.length) {
-            // Report a malformed response rather than pairing data with the wrong requested locations.
             throw new Error('Open-Meteo returned an unexpected number of weather-grid points');
-        // End the response-size validation.
         }
-
-        // Use a map to keep only one sample for each returned model-cell coordinate.
+        // Create map to store only one sample for each returned model-cell coordinate (deduplication)
         const samplesByCell = new Map();
-        // Process each weather response entry alongside its requested coordinate.
+        // Process each weather response entry alongside its requested coordinate
         for (let i = 0; i < entries.length; i++) {
-            // Use an empty object if an individual response entry is unexpectedly missing.
+            // Use an empty object if an individual response entry is unexpectedly missing
             const entry = entries[i] || {};
-            // Read the hourly forecast section, or an empty object if it was omitted.
+            // Read hourly forecast section, or an empty object if it was omitted
             const hourly = entry.hourly || {};
-            // Convert each Unix timestamp from seconds to JavaScript milliseconds.
+            // Convert each Unix timestamp from seconds to JavaScript milliseconds
             const times = Array.isArray(hourly.time)
-                // Convert the provided timestamp list into millisecond numbers.
                 ? hourly.time.map(function (value) { return Number(value) * 1000; })
-                // Use an empty array when the hourly time list is missing or malformed.
+                // Use an empty array when hourly timestamp list is missing or malformed
                 : [];
-            // Read the hourly ten-metre wind-speed values.
+            // Read hourly ten-metre wind-speed and direction values
             const speeds = hourly.wind_speed_10m || [];
-            // Read the hourly ten-metre wind-direction values.
             const directions = hourly.wind_direction_10m || [];
-            // Skip this entry unless its times and paired wind arrays are complete and numeric.
+            // Skip to next iteration unless timestamps are complete and numeric
             if (!times.length || times.some(function (time) { return !Number.isFinite(time); }) ||
+                // Skip to next iteration if the number of speeds or directions does not match the number of timestamps
                 speeds.length !== times.length || directions.length !== times.length) continue;
-
-            // Use the model's returned latitude when valid, otherwise use the requested latitude.
+            // Use the model's returned latitude when valid, otherwise use the requested latitude
             const latitude = entry.latitude !== null && entry.latitude !== undefined && Number.isFinite(Number(entry.latitude))
-                // Convert a valid returned latitude into a number.
+                // Convert a valid returned latitude into a number
                 ? Number(entry.latitude) : this.queryPoints[i].latitude;
-            // Use the model's returned longitude when valid, otherwise use the requested longitude.
+            // Use the model's returned longitude when valid, otherwise use the requested longitude
             const longitude = entry.longitude !== null && entry.longitude !== undefined && Number.isFinite(Number(entry.longitude))
-                // Convert a valid returned longitude into a number.
                 ? Number(entry.longitude) : this.queryPoints[i].longitude;
-            // Build a stable key from the returned coordinates to detect duplicate model cells.
+            // Build a stable key from the returned coordinates rounded to four decimal places to deduplicate model cells
             const cellKey = latitude.toFixed(4) + ',' + longitude.toFixed(4);
-            // Skip an entry when an earlier requested point already resolved to this same model cell.
+            // Skip to next iteration when an earlier requested point already resolved to this same model cell
             if (samplesByCell.has(cellKey)) continue;
-
-            // Store the unique cell's position, time axis, and converted wind vectors.
+            // Store the unique cell's position, time axis, and converted wind vectors
             samplesByCell.set(cellKey, {
-                // Save the actual or fallback latitude associated with this weather cell.
                 latitude: latitude,
-                // Save the actual or fallback longitude associated with this weather cell.
                 longitude: longitude,
-                // Save the hourly timestamps used to find or interpolate wind in time.
                 times: times,
-                // Convert each hourly speed and direction into an east-north vector or null.
+                // Convert each hourly speed and direction into a wind vector that the app can use
                 vectors: times.map(function (_, timeIndex) {
-                    // Read the speed value for this hour and convert it to a number.
+                    // Read the speed and direction value for this hour and convert them to a number
                     const speed = Number(speeds[timeIndex]);
-                    // Read the direction value for this hour and convert it to a number.
                     const direction = Number(directions[timeIndex]);
-                    // Preserve a missing speed as missing data instead of converting null to zero.
+                    // Preserve a missing speed as missing data
                     if (speeds[timeIndex] === null || speeds[timeIndex] === undefined) return null;
-                    // Preserve missing direction data unless the speed is calm and direction is irrelevant.
+                    // Preserve a missing direction as missing data only when speed is non-zero
                     if (speed !== 0 && (directions[timeIndex] === null || directions[timeIndex] === undefined)) return null;
-                    // Convert the hourly values into eastward and northward wind components.
+                    // Convert speed and direction into wind vector
                     return toWindComponents(speed, direction);
-                // End conversion of this cell's hourly values.
                 })
-            // Finish the unique sample object.
             });
-        // End processing of all returned weather entries.
         }
-
-        // Fail the update if no response entry contained a usable hourly wind series.
+        // Issue an error if there are no usable samples after deduplication 
         if (!samplesByCell.size) throw new Error('Open-Meteo returned no usable wind samples');
-        // Replace the previous grid with the newly parsed unique model-cell samples.
+        // Replace the previous grid with the newly parsed unique model-cell samples
         this.samples = Array.from(samplesByCell.values());
-        // Set lookup coverage using spacing among the cells Open-Meteo actually returned.
+        // Calculate how far the grid can be interpolated based on the actual spacing of returned model cells
         this.maxInterpolationDistance = getCoverageRadiusMeters(this.samples);
-        // Record when this complete weather grid was downloaded.
+        // Record when this complete weather grid was downloaded
         this.updatedAt = Date.now();
-        // Report grid count, requested spacing, actual coverage, and source time resolution.
         console.log('Loaded shared wind grid', {
-            // Report how many unique model cells are available for interpolation.
+            // Report how many unique model cells are available for interpolation
             samples: this.samples.length,
-            // Report the requested spacing between coordinates sent to the API.
+            // Report the requested spacing between coordinates sent to the API
             requestedGridSpacingMeters: MODEL_GRID_SPACING_METERS,
-            // Report the estimated maximum interpolation coverage in rounded metres.
-            interpolationCoverageRadiusMeters: Math.round(this.maxInterpolationDistance),
-            // Report the hourly source data's temporal spacing in minutes.
-            temporalResolutionMinutes: 60
-        // Finish the grid-loading diagnostic details.
+            // Report the estimated maximum interpolation coverage in rounded metres
+            interpolationCoverageRadiusMeters: Math.round(this.maxInterpolationDistance)
         });
-    // End conversion of the API response.
     };
 
-    // Fetch the weather grid once, sharing an in-progress request with any other caller.
+    // Fetch the weather grid once, sharing an in-progress request with any other caller
     WeatherManager.prototype.update = function () {
-        // Return the existing promise rather than starting a duplicate request.
+        // Return existing promise rather than starting a duplicate request
         if (this._pending) return this._pending;
-
-        // Format all requested latitudes as comma-separated decimal strings.
+        // Format all requested latitudes and longitudes as comma-separated decimal strings
         const latitudes = this.queryPoints.map(function (point) { return point.latitude.toFixed(5); }).join(',');
-        // Format all requested longitudes as comma-separated decimal strings.
         const longitudes = this.queryPoints.map(function (point) { return point.longitude.toFixed(5); }).join(',');
-        // Begin the API URL with the endpoint and encoded coordinate lists.
-        const url = API_URL + '?latitude=' + encodeURIComponent(latitudes) +
-            // Add the longitude list so the API requests the same set of sample points.
-            '&longitude=' + encodeURIComponent(longitudes) +
-            // Request hourly wind speed and direction at ten metres above ground.
-            '&hourly=wind_speed_10m,wind_direction_10m' +
-            // Ask Open-Meteo to express speed in metres per second.
-            '&wind_speed_unit=ms' +
-            // Ask for Unix timestamps to make date conversion explicit and consistent.
-            '&timeformat=unixtime' +
-            // Use UTC so data times do not depend on the visitor's local timezone.
+        // Define the API URL
+        const url = 'https://api.open-meteo.com/v1/ecmwf' + '?latitude=' + encodeURIComponent(latitudes) +
+            '&longitude=' + encodeURIComponent(longitudes) + '&hourly=wind_speed_10m,wind_direction_10m' +
+            '&wind_speed_unit=ms' + '&timeformat=unixtime' +
+            // Use UTC so data times do not depend on the visitor's local timezone
             '&timezone=UTC' +
-            // Include one past hour so a current timestamp can be interpolated when possible.
-            '&past_hours=1' +
-            // Request the configured number of future forecast hours.
-            '&forecast_hours=' + FORECAST_HOURS +
-            // Let Open-Meteo select the nearest available model cell for each coordinate.
+            // Include one past and 48 future hours so current timestamp can be interpolated when possible
+            '&past_hours=1' + '&forecast_hours=' + 48 +
+            // Let Open-Meteo select the nearest available model cell for each coordinate
             '&cell_selection=nearest';
-
-        // Save the complete request chain so later callers can reuse it until it finishes.
+        // Send the request to Open-Meteo and store the resulting promise so other callers can share it
         this._pending = fetch(url)
-            // Check for HTTP failure before attempting to parse the response body.
             .then(function (response) {
-                // Reject unsuccessful responses with their HTTP status code.
+                // Issue an error if HTTP request failed, which will be caught by following catch ()
                 if (!response.ok) throw new Error('Open-Meteo request failed: ' + response.status);
-                // Parse a successful response body as JSON.
+                // Parse a successful response body as JSON
                 return response.json();
-            // Pass the parsed response to this manager's grid parser.
             })
-            .then((data) => this._applyApi(data))
-            // Keep the previous complete grid if this network refresh fails.
+            // Convert the API response into the manager's internal sample grid format
+            .then((data) => {
+                this._applyApi(data);
+                return { success: true };
+            })
             .catch(function (error) {
-                // Report the failed update so the problem is visible during debugging.
+                // Issue an error when fetched data or processing fails
                 console.error('Weather grid update failed', error);
-            // End the request error handler.
+                return { success: false, error: error };
             })
-            // Clear the pending-request marker after either success or failure.
-            .then(() => { this._pending = null; });
-
-        // Return the promise so callers can wait until this update attempt has finished.
+            // Schedule clearing the pending promise after the request has finished
+            .then((result) => {
+                this._pending = null;
+                return result;
+            });
+        // Return the shared promise so callers can wait for the same weather update 
         return this._pending;
-    // End the shared weather update method.
     };
 
-    // Estimate the wind vector at any supported coordinate and timestamp.
+    // Estimate the wind vector at any supported coordinate and timestamp
     WeatherManager.prototype.getWindAt = function (latitude, longitude, timestamp) {
-        // Reject invalid coordinate or time inputs before searching the weather grid.
+        // Reject invalid coordinate or time inputs 
         if (!Number.isFinite(latitude) || !Number.isFinite(longitude) || !Number.isFinite(timestamp)) return null;
-        // Do not extrapolate to coordinates beyond the padded grid's outer bounds.
+        // Do not extrapolate to coordinates beyond the territory bounds
         if (latitude < this.bounds.minLatitude || latitude > this.bounds.maxLatitude ||
             longitude < this.bounds.minLongitude || longitude > this.bounds.maxLongitude) return null;
-
-        // Create a short ordered list of the nearest valid weather samples.
+        // Create an empty array to hold the closest four samples with usable wind data
         const nearest = [];
-        // Check every available model-cell sample for usable time and distance data.
+        // Check every available weather sample 
         for (let i = 0; i < this.samples.length; i++) {
-            // Read the model-cell sample currently being considered.
+            // Get the current sample
             const sample = this.samples[i];
-            // Get its exact or time-interpolated wind vector for the requested timestamp.
+            // Get its exact or time-interpolated wind vector for requested timestamp
             const vector = getTimedVector(sample, timestamp);
-            // Skip this sample if it has no usable wind vector at the requested time.
+            // Skip current iteration if it has no usable wind vector
             if (!vector) continue;
-            // Calculate the geographic distance from the requested point to this sample cell.
+            // Calculate geographic distance between current weather sample and requested coordinate 
             const distance = distanceMeters(latitude, longitude, sample);
-            // Skip samples outside the grid's current interpolation coverage radius.
+            // Skip current sample if it's outside the grid's current interpolation coverage radius
             if (distance > this.maxInterpolationDistance) continue;
-
-            // Begin by inserting this sample after all existing samples.
+            // Assume current sample comes after all existing samples
             let insertionIndex = nearest.length;
-            // Move the insertion point left while existing samples are farther away.
+            // Move the insertion point left while previous samples are farther away than current sample
             while (insertionIndex > 0 && nearest[insertionIndex - 1].distance > distance) insertionIndex--;
-            // Keep this sample only if it belongs among the four closest valid cells.
+            // Keep current sample only if it belongs among the four closest valid cells
             if (insertionIndex < 4) {
-                // Insert the sample and its distance in nearest-first order.
+                // Insert current sample in nearest-first order
                 nearest.splice(insertionIndex, 0, { distance: distance, vector: vector });
-                // Remove the farthest entry if insertion made the list longer than four.
+                // Remove the farthest entry if insertion made the list longer than four
                 if (nearest.length > 4) nearest.pop();
-            // End the nearest-four insertion condition.
             }
-        // End the scan through the shared sample grid.
         }
-
-        // Return no wind when time, coverage, or missing-data checks found no valid sample.
+        // Return no wind if there are no valid nearest samples
         if (!nearest.length) return null;
-        // Return an almost exact sample directly to avoid unstable weights near zero distance.
-        if (nearest[0].distance < 1) {
-            // Copy the closest sample's east and north components into the result.
+        // If the closest sample is less than one metre away, return its vector without interpolation 
+        // To avoid numerical instability from dividing by a very small distance
+        if (nearest[0].distance < SAME_LOCATION_THRESHOLD_METERS) {
             return { east: nearest[0].vector.east, north: nearest[0].vector.north };
-        // End the direct-nearest-sample condition.
         }
-
-        // Explain that this calculation blends model cells into a location estimate.
-        // The interpolation creates continuity but cannot create new meteorological detail.
-        // Start totals used to calculate the weighted average of nearby vectors.
+        // Initialize totals used to calculate the weighted average of nearby vectors
         let totalWeight = 0;
-        // Start the accumulated eastward component at zero.
         let east = 0;
-        // Start the accumulated northward component at zero.
         let north = 0;
-        // Add each of the nearest samples to the inverse-distance weighted totals.
+        // Calculate weighted average of the closest four samples
         for (let i = 0; i < nearest.length; i++) {
-            // Give closer samples more influence by using the inverse square of distance.
+            // Give closer samples more influence by using the inverse square of distance
             const weight = 1 / (nearest[i].distance * nearest[i].distance);
-            // Add this sample's weight to the normalization total.
             totalWeight += weight;
-            // Add its weighted eastward component to the running total.
             east += nearest[i].vector.east * weight;
-            // Add its weighted northward component to the running total.
             north += nearest[i].vector.north * weight;
-        // End accumulation across the nearest samples.
         }
-        // Normalize both weighted component totals and return the estimated local wind vector.
         return { east: east / totalWeight, north: north / totalWeight };
-    // End the location-specific weather lookup method.
     };
 
-    // Start an immediate fetch and set up recurring shared-grid refreshes.
-    WeatherManager.prototype.start = function () {
-        // Do nothing when this manager already has a refresh timer running.
-        if (this._interval) return;
-        // Fetch the first grid immediately instead of waiting for the timer.
-        this.update();
-        // Schedule a future shared-grid update at the configured refresh interval.
-        this._interval = setInterval(() => this.update(), REFRESH_INTERVAL);
-    // End the weather manager start method.
+    // Start weather updates and wait for the initial grid result
+    WeatherManager.prototype.start = async function (onError) {
+        // Reuse the initial result when the refresh timer is already running
+        if (this._interval) return await this._startPromise;
+        // Fetch the initial grid and keep its result available to start callers
+        this._startPromise = this.update();
+        // Schedule future updates for every hour
+        this._interval = setInterval(() => {
+            this.update().then((result) => {
+                if (!result.success && typeof onError === 'function') onError(result.error);
+            });
+        }, REFRESH_INTERVAL);
+        // Do not finish starting until the initial weather request has reported its result
+        return await this._startPromise;
     };
-
-    // Stop future automatic weather refreshes.
-    WeatherManager.prototype.stop = function () {
-        // Clear the timer when one was previously created.
-        if (this._interval) clearInterval(this._interval);
-        // Reset the timer field so start() can be called again later.
-        this._interval = null;
-    // End the weather manager stop method.
-    };
-
-    // Expose the constructor so the main app can create a weather manager instance.
+    // Expose the constructor so the main app can create a weather manager instance
     return WeatherManager;
-// End the wrapper that keeps helper functions and constants private.
 }());

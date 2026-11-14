@@ -9,11 +9,9 @@ function shuffle(text) {
         const j = Math.floor(Math.random() * (i + 1));
         // Swap the current item with the randomly selected item.
         [text[i], text[j]] = [text[j], text[i]];
-    // End the loop after every index has had a chance to move.
     }
-    // Return the now-shuffled array to the caller.
+    // Return the now-shuffled array 
     return text;
-// End the shuffle helper function.
 }
 
 // Define the manager that creates fragments and updates their animation.
@@ -36,7 +34,6 @@ function TextManager(map, text, originLatLng, options) {
         speedJitter: 0.18,
         // Set how many seconds velocity smoothing should take; zero disables smoothing.
         windSmoothingSeconds: 0
-    // Finish the object of default animation settings.
     }, options || {});
     // Convert the configured base lifespan into milliseconds using the existing 0.2 scale.
     const lifespanMilliseconds = this.opts.baseLifespan / 0.2 * 1000;
@@ -54,11 +51,9 @@ function TextManager(map, text, originLatLng, options) {
             spawnIntervalMilliseconds: this.opts.spawnInterval,
             // Record the resulting fragment lifetime in seconds.
             fragmentLifespanSeconds: lifespanMilliseconds / 1000
-        // Finish the details logged for the capacity adjustment.
         });
         // Raise the limit so active fragments do not block later scheduled spawns.
         this.opts.maxFragments = capacityForContinuousSpawning;
-    // End the conditional capacity adjustment.
     }
     // Keep the shared weather manager, or use null when none was provided.
     this.weather = this.opts.weather || null;
@@ -78,7 +73,6 @@ function TextManager(map, text, originLatLng, options) {
     this._handleVisibilityChange = null;
     // Mark the animation loop as not running until start() is called.
     this._running = false;
-// End the TextManager constructor.
 }
 
 // Define the method that creates and registers one fragment element.
@@ -93,15 +87,12 @@ TextManager.prototype._spawnFragment = function () {
                 activeFragments: this.fragments.length,
                 // Include the maximum number currently allowed.
                 maxFragments: this.opts.maxFragments
-            // Finish the details logged with the warning.
             });
             // Remember that the warning has been printed to avoid repeating it every frame.
             this._capacityWarning = true;
-        // End the one-time warning condition.
         }
         // Stop this spawn attempt because there is no remaining capacity.
         return;
-    // End the capacity check.
     }
     // Allow a future capacity warning after the active count drops below the limit.
     this._capacityWarning = false;
@@ -157,14 +148,12 @@ TextManager.prototype._spawnFragment = function () {
         createdAt: performance.now(),
         // Store the fragment's lifespan in milliseconds for comparison with its age.
         lifespan: lifespan * 1000
-    // Finish the fragment state object.
     };
 
     // Place the new element at its origin using a CSS pixel translation.
     element.style.transform = 'translate(' + fragment.x + 'px, ' + fragment.y + 'px)';
     // Add the new fragment state to the list processed by each animation update.
     this.fragments.push(fragment);
-// End the fragment creation method.
 };
 
 // Define the method that removes one fragment from both the page and active list.
@@ -177,11 +166,9 @@ TextManager.prototype._removeFragment = function (index) {
     if (fragment.element && fragment.element.parentNode) {
         // Remove the fragment's DOM node from the page.
         fragment.element.parentNode.removeChild(fragment.element);
-    // End the DOM-parent check.
     }
     // Remove the fragment state from the active list.
     this.fragments.splice(index, 1);
-// End the fragment removal method.
 };
 
 // Define one movement update for a fragment using the wind at its current position.
@@ -209,9 +196,7 @@ TextManager.prototype._moveFragment = function (fragment, deltaTime, timestamp) 
                 longitude: Number(location.lng.toFixed(5)),
                 // Include the timestamp as a standard ISO date-time string.
                 timestamp: new Date(timestamp).toISOString()
-            // Finish the unavailable-wind diagnostic details.
             });
-        // End the diagnostic rate-limit check.
         }
         // Stop horizontal movement when no valid local wind vector exists.
         fragment.vx = 0;
@@ -219,7 +204,6 @@ TextManager.prototype._moveFragment = function (fragment, deltaTime, timestamp) 
         fragment.vy = 0;
         // Skip the rest of this movement update because there is no wind to apply.
         return;
-    // End the missing-wind handling block.
     }
 
     // Convert eastward wind speed into a horizontal pixel velocity and apply this fragment's multiplier.
@@ -273,13 +257,9 @@ TextManager.prototype._moveFragment = function (fragment, deltaTime, timestamp) 
                 x: Number(fragment.vx.toFixed(2)),
                 // Include the vertical velocity rounded to two decimal places.
                 y: Number(fragment.vy.toFixed(2))
-            // Finish the screen velocity details object.
             }
-        // Finish the current wind diagnostic details object.
         });
-    // End the wind logging interval check.
     }
-// End the single-fragment movement method.
 };
 
 // Define the method that advances spawning, movement, age, opacity, and scale for a frame.
@@ -297,7 +277,6 @@ TextManager.prototype._update = function (now) {
         this._accumulator -= this.opts.spawnInterval;
         // Create one fragment at the fixed session origin.
         this._spawnFragment();
-    // End the loop that catches up on elapsed spawn intervals.
     }
 
     // Read wall-clock time for weather lookup and human-readable wind diagnostics.
@@ -314,7 +293,6 @@ TextManager.prototype._update = function (now) {
             this._removeFragment(i);
             // Skip movement and visual updates for the fragment that was just removed.
             continue;
-        // End the expiration check.
         }
 
         // Update the fragment's position using wind at its current geographic coordinates.
@@ -329,9 +307,7 @@ TextManager.prototype._update = function (now) {
         fragment.element.style.transform = 'translate(' + fragment.x + 'px, ' + fragment.y + 'px) scale(' + scale + ')';
         // Apply the calculated age-based opacity to the fragment element.
         fragment.element.style.opacity = opacity;
-    // End the pass that updates all active fragments.
     }
-// End the per-frame update method.
 };
 
 // Define the method that starts the animation loop and visibility handling.
@@ -352,9 +328,7 @@ TextManager.prototype.start = function () {
         if (this._running && !document.hidden) {
             // Report how many fragments remained active when the animation resumed.
             console.info('BADKOOBEH simulation resumed', { activeFragments: this.fragments.length });
-        // End the visible-page resume condition.
         }
-    // End the visibility-change event handler.
     };
     // Listen for browser visibility changes so animation timing can be reset appropriately.
     document.addEventListener('visibilitychange', this._handleVisibilityChange);
@@ -372,15 +346,12 @@ TextManager.prototype.start = function () {
         } else {
             // Advance fragment creation, motion, lifetime, and appearance for this frame.
             this._update(now);
-        // End the visible-versus-hidden branch.
         }
         // Ask the browser to call this animation callback again for the next frame.
         requestAnimationFrame(frame);
-    // End the animation-frame callback definition.
     };
     // Request the first animation frame, which starts the recurring update loop.
     requestAnimationFrame(frame);
-// End the start method.
 };
 
 // Define the method that stops the animation loop and removes all active fragments.
@@ -393,13 +364,10 @@ TextManager.prototype.stop = function () {
         document.removeEventListener('visibilitychange', this._handleVisibilityChange);
         // Clear the saved function reference to show there is no registered handler.
         this._handleVisibilityChange = null;
-    // End the visibility-handler cleanup condition.
     }
     // Walk backward through active fragments so each can safely be removed from the array.
     for (let i = this.fragments.length - 1; i >= 0; i--) {
         // Remove this fragment's DOM element and state from the manager.
         this._removeFragment(i);
-    // End the loop that clears active fragments.
     }
-// End the stop method.
 };
