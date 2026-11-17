@@ -1,11 +1,13 @@
 // Define the shared wind-data service, which fetches one grid for all fragments
 const WeatherManager = (function () {
-    // Set the requested spacing between geographic weather sample points to nine kilometres
+    // Set the requested spacing between geographic weather sample points to 9 km
     const MODEL_GRID_SPACING_METERS = 9000;
     // Use Earth's average radius when estimating distances between nearby coordinates
     const EARTH_RADIUS_METERS = 6371000;
-    // Refresh the shared weather grid every hour
-    const REFRESH_INTERVAL = 60 * 60 * 1000;
+    // Check ECMWF model metadata every 10 minutes to see if a newer model run is available
+    const MODEL_UPDATE_CHECK_INTERVAL = 10 * 60 * 1000;
+    // Allow Open-Meteo's API servers 10 minutes to synchronize the latest ECMWF model run
+    const MODEL_AVAILABILITY_SETTLE_TIME = 10 * 60 * 1000;
     // Degrees to meters conversion factor for latitude, which is constant everywhere on Earth
     const METERS_PER_DEGREE_LATITUDE = 111320;
     // When two locations are within this distance, they are considered the same for wind-relative positioning
@@ -17,11 +19,11 @@ const WeatherManager = (function () {
         // Read territory's corners
         const southWest = territoryBounds.getSouthWest();
         const northEast = territoryBounds.getNorthEast();
-        // Convert nine-kilometres into approximate degrees of latitude
+        // Convert 9 km into approximate degrees of latitude
         const latitudeDegree = MODEL_GRID_SPACING_METERS / METERS_PER_DEGREE_LATITUDE;
         // Estimate the territory's middle latitude for longitude-distance conversion
         const middleLatitude = (southWest.lat + northEast.lat) / 2;
-        // Convert nine kilometres into approximate degrees of longitude at the middle latitude
+        // Convert 9 km into approximate degrees of longitude at the middle latitude
         const longitudeDegree = MODEL_GRID_SPACING_METERS /
             (METERS_PER_DEGREE_LATITUDE * Math.cos(middleLatitude * Math.PI / 180));
         // Create array that will hold every requested latitude-longitude point
@@ -173,6 +175,12 @@ const WeatherManager = (function () {
         this.maxInterpolationDistance = MODEL_GRID_SPACING_METERS * 1.5;
         // Track ongoing network request to avoid duplicate fetches 
         this._pending = null;
+        // Track an ongoing metadata check to prevent duplicate requests
+        this._metadataPending = null;
+        // Remember the last model run whose wind grid was successfully loaded
+        this._lastModelAvailabilityTime = null;
+        // Prevent repeated reload prompts while a refresh error continues
+        this._refreshErrorReported = false;
         // Store the initial update result so repeated start calls share it.
         this._startPromise = null;
         // Track refresh timer
@@ -354,19 +362,92 @@ const WeatherManager = (function () {
         return { east: east / totalWeight, north: north / totalWeight };
     };
 
+    // Check whether Open-Meteo has made a newer ECMWF model run available
+    WeatherManager.prototype._checkForModelUpdate = function () {
+        // Reuse the active metadata request rather than sending a duplicate
+        if (this._metadataPending) return this._metadataPending;
+        // Read model availability metadata 
+        this._metadataPending = fetch('https://api.open-meteo.com/data/ecmwf_ifs/static/meta.json', { cache: 'no-store' })
+            .then(function (response) {
+                // Fail this check when Open-Meteo did not return a successful status code
+                if (!response.ok) throw new Error('Open-Meteo model metadata request failed: ' + response.status);
+                // Parse the metadata JSON returned for the ECMWF IFS model
+                return response.json();
+            })
+            .then((metadata) => {
+                // Convert the model's Unix availability timestamp from seconds to milliseconds.
+                const availabilityTime = Number(metadata && metadata.last_run_availability_time) * 1000;
+                // Reject metadata that does not contain a usable availability timestamp.
+                if (!Number.isFinite(availabilityTime) || availabilityTime <= 0) {
+                    throw new Error('Open-Meteo model metadata did not include a valid availability time');
+                }
+                // Establish the starting model version when no baseline has been recorded yet.
+                if (this._lastModelAvailabilityTime === null) {
+                    this._lastModelAvailabilityTime = availabilityTime;
+                    return { success: true, updated: false };
+                }
+                // Keep the existing grid when the model's availability timestamp has not advanced.
+                if (availabilityTime <= this._lastModelAvailabilityTime) {
+                    return { success: true, updated: false };
+                }
+                // Wait until Open-Meteo's recommended server-synchronization window has passed.
+                if (Date.now() < availabilityTime + MODEL_AVAILABILITY_SETTLE_TIME) {
+                    return { success: true, updated: false, waitingForAvailability: true };
+                }
+                // Download and apply the shared wind grid for the newly available model run.
+                return this.update().then((result) => {
+                    // Remember this run only after its wind grid was loaded successfully.
+                    if (result.success) this._lastModelAvailabilityTime = availabilityTime;
+                    // Return whether the new model run was applied to the shared grid.
+                    return { success: result.success, error: result.error, updated: result.success };
+                });
+            })
+            .catch(function (error) {
+                // Log metadata and parsing errors for debugging in the browser console.
+                console.error('Open-Meteo model update check failed', error);
+                // Report failure so startup's existing reload prompt can notify the visitor.
+                return { success: false, error: error, updated: false };
+            })
+            .then((result) => {
+                // Clear the shared pending-check marker after the request chain finishes.
+                this._metadataPending = null;
+                // Return the check result to the timer or any other caller.
+                return result;
+            });
+        // Return the shared promise so concurrent callers await this same metadata check.
+        return this._metadataPending;
+    };
+
     // Start weather updates and wait for the initial grid result
     WeatherManager.prototype.start = async function (onError) {
         // Reuse the initial result when the refresh timer is already running
         if (this._interval) return await this._startPromise;
+        // Start the metadata request first so its timestamp can serve as the initial baseline.
+        const initialMetadataCheck = this._checkForModelUpdate();
         // Fetch the initial grid and keep its result available to start callers
         this._startPromise = this.update();
-        // Schedule future updates for every hour
+        // Handle a failure from the initial metadata check without blocking the initial grid fetch.
+        initialMetadataCheck.then((result) => {
+            // Prompt the visitor once if the metadata request fails.
+            if (!result.success && typeof onError === 'function' && !this._refreshErrorReported) {
+                this._refreshErrorReported = true;
+                onError(result.error);
+            }
+        });
+        // Schedule lightweight metadata checks instead of unconditional full-grid downloads.
         this._interval = setInterval(() => {
-            this.update().then((result) => {
-                if (!result.success && typeof onError === 'function') onError(result.error);
+            // Check whether a newer model run is available and report check or grid errors.
+            this._checkForModelUpdate().then((result) => {
+                // Prompt the visitor once while an error continues across timer ticks.
+                if (!result.success && typeof onError === 'function' && !this._refreshErrorReported) {
+                    this._refreshErrorReported = true;
+                    onError(result.error);
+                }
+                // Allow a later independent error to be reported after a successful check.
+                if (result.success) this._refreshErrorReported = false;
             });
-        }, REFRESH_INTERVAL);
-        // Do not finish starting until the initial weather request has reported its result
+        }, MODEL_UPDATE_CHECK_INTERVAL);
+        // Do not finish starting until the initial grid has been fetched and processed
         return await this._startPromise;
     };
     // Expose the constructor so the main app can create a weather manager instance
