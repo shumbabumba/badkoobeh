@@ -354,7 +354,7 @@ const WeatherManager = (function () {
     WeatherManager.prototype.start = async function () {
         // Return the existing promise if the initial weather-grid request is already in progress
         if (this._startPromise) return await this._startPromise;
-        // Start the initial weather-grid request and store its promise so other callers can share it
+        // Start the weather-grid request and store its promise so other callers can share it
         this._startPromise = this.update();
         // Return the shared promise so other callers can wait for the same weather update
         return await this._startPromise;
