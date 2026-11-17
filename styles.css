@@ -28,11 +28,56 @@ body {
 }
 
 #title {
-    font-size: 20px;
+    font-size: 14px;
     font-weight: 400;
     color: #ffffff;
     letter-spacing: 2px;
     text-decoration: none;
+}
+
+.weather-error[hidden] {
+    display: none;
+}
+
+.weather-error {
+    position: fixed;
+    inset: 0;
+    z-index: 1000;
+    display: grid;
+    place-items: center;
+    padding: 24px;
+    background: rgba(2, 9, 13, 0.78);
+    color: #ffffff;
+    text-align: center;
+}
+
+.weather-error__panel {
+    width: min(100%, 420px);
+    padding: 28px 24px;
+    border: 1px solid rgba(255, 255, 255, 0.35);
+    background: rgba(2, 9, 13, 0.96);
+}
+
+.weather-error__panel p {
+    margin: 0 0 20px;
+    font-size: 15px;
+    line-height: 1.5;
+    letter-spacing: 0.4px;
+}
+
+.weather-error__panel button {
+    padding: 9px 14px;
+    border: 1px solid rgba(255, 255, 255, 0.7);
+    background: transparent;
+    color: #ffffff;
+    font: inherit;
+    cursor: pointer;
+}
+
+.weather-error__panel button:hover,
+.weather-error__panel button:focus-visible {
+    background: #ffffff;
+    color: #02090d;
 }
 
 .leaflet-control-attribution {
@@ -42,7 +87,7 @@ body {
     border-radius: 0 !important;
     padding: 5px 9px !important;
     font-family: Arial, sans-serif;
-    font-size: 10px;
+    font-size: 7px;
     letter-spacing: 0.5px;
     box-shadow: none !important;
 }
@@ -55,7 +100,7 @@ body {
 /* Text fragment styling - simple, high-contrast, preserves Azerbaijani Unicode */
 .fragment {
     color: #ffffff;
-    font-size: 12px;
+    font-size: 11px;
     line-height: 1;
     font-weight: 400;
     letter-spacing: 0.3px;
