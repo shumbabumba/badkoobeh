@@ -185,6 +185,10 @@ const WeatherManager = (function () {
         }
         // Create map to store only one sample for each returned model-cell coordinate (deduplication)
         const samplesByCell = new Map();
+        // Count entries that contain valid hourly arrays
+        let usableEntries = 0;
+        // Count entries that share a model cell with an earlier entry and are therefore ignored
+        let duplicateCells = 0;
         // Process each weather response entry alongside its requested coordinate
         for (let i = 0; i < entries.length; i++) {
             // Use an empty object if an individual response entry is unexpectedly missing
@@ -203,6 +207,8 @@ const WeatherManager = (function () {
             if (!times.length || times.some(function (time) { return !Number.isFinite(time); }) ||
                 // Skip to next iteration if the number of speeds or directions does not match the number of timestamps
                 speeds.length !== times.length || directions.length !== times.length) continue;
+            // Count this response entry as structurally usable 
+            usableEntries++;
             // Use the model's returned latitude when valid, otherwise use the requested latitude
             const latitude = entry.latitude !== null && entry.latitude !== undefined && Number.isFinite(Number(entry.latitude))
                 // Convert a valid returned latitude into a number
@@ -210,10 +216,14 @@ const WeatherManager = (function () {
             // Use the model's returned longitude when valid, otherwise use the requested longitude
             const longitude = entry.longitude !== null && entry.longitude !== undefined && Number.isFinite(Number(entry.longitude))
                 ? Number(entry.longitude) : this.queryPoints[i].longitude;
-            // Build a stable key from the returned coordinates rounded to four decimal places to deduplicate model cells
-            const cellKey = latitude.toFixed(4) + ',' + longitude.toFixed(4);
+            // Build a stable key from the returned coordinates
+            const cellKey = latitude + ',' + longitude;
             // Skip to next iteration when an earlier requested point already resolved to this same model cell
-            if (samplesByCell.has(cellKey)) continue;
+            if (samplesByCell.has(cellKey)) {
+                // Increment duplicates counter
+                duplicateCells++;
+                continue;
+            }
             // Store the unique cell's position, time axis, and converted wind vectors
             samplesByCell.set(cellKey, {
                 latitude: latitude,
@@ -242,6 +252,14 @@ const WeatherManager = (function () {
         // Record when this complete weather grid was downloaded
         this.updatedAt = Date.now();
         console.log('Loaded shared wind grid', {
+            // Report how many geographic points were sent in the request
+            requestedPoints: this.queryPoints.length,
+            // Report how many location entries Open-Meteo returned
+            returnedEntries: entries.length,
+            // Report how many response entries contained valid hourly arrays
+            usableEntries: usableEntries,
+            // Report how many usable entries shared a cell key with an earlier entry
+            duplicateCells: duplicateCells,
             // Report how many unique model cells are available for interpolation
             samples: this.samples.length,
             // Report the requested spacing between coordinates sent to the API
@@ -267,7 +285,9 @@ const WeatherManager = (function () {
             // Include one past and 48 future hours so current timestamp can be interpolated when possible
             '&past_hours=1' + '&forecast_hours=' + 48 +
             // Let Open-Meteo select the nearest available model cell for each coordinate
-            '&cell_selection=nearest';
+            '&cell_selection=nearest' +
+            // Select native 9 km IFS HRES model
+            '&models=ecmwf_ifs';
         // Send the request to Open-Meteo and store the resulting promise so other callers can share it
         this._pending = fetch(url)
             .then(function (response) {
