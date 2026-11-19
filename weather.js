@@ -97,7 +97,7 @@ const WeatherManager = (function () {
             else high = middle - 1;
         }
         // If no match is found, the loop exits when high is the last index before the requested time 
-        // and low is the first index after it
+        // And low is the first index after it
         const beforeIndex = high;
         const afterIndex = low;
         // Read the vector from the earlier and later time samples
@@ -125,37 +125,6 @@ const WeatherManager = (function () {
         return Math.sqrt(east * east + north * north);
     }
 
-    // Open-Meteo may return snapped model cells that are farther apart than the requested points
-    // Estimate the returned Open-Meteo coverage radius based on the actual spacing of returned snapped model cells
-    // Account for difference between model grid spacing (9 km) and Open-Meteo's returned cell spacing
-    function getCoverageRadiusMeters(samples) {
-        // Collect unique sample latitudes and sort them in ascending order (from south to north)
-        const latitudes = Array.from(new Set(samples.map(function (sample) 
-            { return sample.latitude; }))).sort(function (a, b) 
-            { return a - b; });
-        // Collect unique sample longitudes and sort them in ascending order (from west to east)
-        const longitudes = Array.from(new Set(samples.map(function (sample) 
-            { return sample.longitude; }))).sort(function (a, b) 
-            { return a - b; });
-        // Calculate the average sample latitude of all weather samples in radians
-        const middleLatitude = samples.reduce(function (sum, sample)
-            { return sum + sample.latitude; }, 0) / samples.length * (Math.PI / 180);
-        // Find the largest gap between sorted sample coordinates in metres
-        function largestGapMeters(values, metersPerDegree) {
-            let largestGap = 0;
-            for (let i = 1; i < values.length; i++) {
-                largestGap = Math.max(largestGap, (values[i] - values[i - 1]) * metersPerDegree);
-            }
-            // Use either the measured largest gap, or the requested model spacing if there is only one coordinate
-            return largestGap || MODEL_GRID_SPACING_METERS;
-        }
-        // Calculate the largest latitude and longitude gaps (they don't neccesarily belong to the same cell)
-        const latitudeSpacing = largestGapMeters(latitudes, METERS_PER_DEGREE_LATITUDE);
-        const longitudeSpacing = largestGapMeters(longitudes, METERS_PER_DEGREE_LATITUDE * Math.cos(middleLatitude)); 
-        // Estimate the maximum distance from any point to the nearest weather sample with the largest gap
-        return Math.sqrt(latitudeSpacing * latitudeSpacing + longitudeSpacing * longitudeSpacing) / 2;
-    }
-
     // Create a single instance of weather manager with shared grid 
     // From which all fragments can interpolate wind data
     // Without each fragment making its own network requests to Open-Meteo 
@@ -167,8 +136,6 @@ const WeatherManager = (function () {
         this.bounds = grid.bounds;
         // Initialize empty array of unique samples returned by Open-Meteo (cached)
         this.samples = [];
-        // Set initial maximum interpolation distance for samples until returned-cell spacing is known
-        this.maxInterpolationDistance = MODEL_GRID_SPACING_METERS * 1.5;
         // Track ongoing network request to avoid duplicate fetches 
         this._pending = null;
         // Track the promise for the initial weather-grid request so it can be reused by other callers
@@ -247,8 +214,6 @@ const WeatherManager = (function () {
         if (!samplesByCell.size) throw new Error('Open-Meteo returned no usable wind samples');
         // Replace the previous grid with the newly parsed unique model-cell samples
         this.samples = Array.from(samplesByCell.values());
-        // Calculate how far the grid can be interpolated based on the actual spacing of returned model cells
-        this.maxInterpolationDistance = getCoverageRadiusMeters(this.samples);
         // Record when this complete weather grid was downloaded
         this.updatedAt = Date.now();
         console.log('Loaded shared wind grid', {
@@ -261,11 +226,7 @@ const WeatherManager = (function () {
             // Report how many usable entries shared a cell key with an earlier entry
             duplicateCells: duplicateCells,
             // Report how many unique model cells are available for interpolation
-            samples: this.samples.length,
-            // Report the requested spacing between coordinates sent to the API
-            requestedGridSpacingMeters: MODEL_GRID_SPACING_METERS,
-            // Report the estimated maximum interpolation coverage in rounded metres
-            interpolationCoverageRadiusMeters: Math.round(this.maxInterpolationDistance)
+            samples: this.samples.length
         });
     };
 
@@ -334,8 +295,6 @@ const WeatherManager = (function () {
             if (!vector) continue;
             // Calculate geographic distance between current weather sample and requested coordinate 
             const distance = distanceMeters(latitude, longitude, sample);
-            // Skip current sample if it's outside the grid's current interpolation coverage radius
-            if (distance > this.maxInterpolationDistance) continue;
             // Assume current sample comes after all existing samples
             let insertionIndex = nearest.length;
             // Move the insertion point left while previous samples are farther away than current sample

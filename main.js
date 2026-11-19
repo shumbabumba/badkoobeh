@@ -1,21 +1,18 @@
-// Define a helper for downloading a file and reading its response as JSON
+// Helper function for fetching JSON files and handling errors
 function fetchJSON(path) {
     return fetch(path).then(function (r) {
-        // Check whether the server returned a successful HTTP status code
         if (!r.ok) throw new Error('Failed to fetch ' + path + ': ' + r.status);
-        // Parse the response body as JSON and return the resulting promise
         return r.json();
     });
 }
 
-// Show the reload prompt when an Open-Meteo request fails.
+// Show the reload prompt when an Open-Meteo request fails
 function showWeatherError() {
     const errorPanel = document.getElementById('weather-error');
     errorPanel.hidden = false;
     document.getElementById('weather-error-reload').focus();
 }
-
-// Let the visitor retry the experience by refreshing the page.
+// Let the visitor refresh the page
 document.getElementById('weather-error-reload').addEventListener('click', function () {
     window.location.reload();
 });
