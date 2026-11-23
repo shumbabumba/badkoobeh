@@ -39,7 +39,7 @@ Promise.all([fetchJSON('files/locations.json'), fetchJSON('files/text.json')]).t
         longitude: origin.longitude
     });
     // Initialize weather and text manager 
-    const weatherManager = new WeatherManager(worldBounds);
+    const weatherManager = new WeatherManager(weatherBounds);
     const textManager = new TextManager(map, text,
         { 
             latitude: origin.latitude, 
@@ -62,38 +62,39 @@ Promise.all([fetchJSON('files/locations.json'), fetchJSON('files/text.json')]).t
         }
         // Retrieve current wind vector at the selected origin and timestamp
         const wind = weatherManager.getWindAt(origin.latitude, origin.longitude, Date.now());
-        // Determine the strongest wind component
+        // Determine the strongest wind component (returns number in m/s, or 0 if no wind data is available)
         const strongestWindComponent = wind
             ? Math.max(Math.abs(wind.east), Math.abs(wind.north))
             : 0;
-        // Initialize the origin's screen point to the viewport center
-        let originScreenPoint = L.point(map.getSize().x / 2, map.getSize().y / 2);
+        // Center the desired screen position of origin by default
+        let originGoal = L.point(map.getSize().x / 2, map.getSize().y / 2);
         // If there is a dominant wind component
-        if (strongestWindComponent > 0) {
+        if (strongestWindComponent > 1) {
             // If north-south wind is stronger than east-west wind
             if (Math.abs(wind.north) / map.getSize().y >= Math.abs(wind.east) / map.getSize().x) {
-                // Center the origin horizontally and shift it vertically in the wind direction
-                originScreenPoint = L.point(
-                    map.getSize().x / 2,
+                // Center the origin horizontally and shift it vertically based on the wind direction
+                originGoal = L.point(
+                    map.getSize().x / 2.5,
                     map.getSize().y * (0.5 + 0.35 * Math.sign(wind.north))
                 );
-            // For dominant east-west wind, center the origin vertically and horizontally
-            } else {
-                originScreenPoint = L.point(map.getSize().x / 2, map.getSize().y / 2);
             }
         }
-        // Convert the origin from geographic coordinates to map pixels at the current zoom level
-        const projectedOrigin = map.project([origin.latitude, origin.longitude], map.getZoom());
-        // Calculate the viewport's center point in screen pixels
+        // Get the map's current zoom level
+        const zoom = map.getZoom();
+        // Convert the origin from geographic coordinates to projected map pixels at the current zoom level
+        const projectedOrigin = map.project([origin.latitude, origin.longitude], zoom);
+        // Get the viewport's center point in screen pixels
         const screenCenter = L.point(map.getSize().x / 2, map.getSize().y / 2);
-        // Shift the projected map center so the origin lands at its wind-relative screen point
-        const projectedCenter = L.point(
-            projectedOrigin.x + screenCenter.x - originScreenPoint.x,
-            projectedOrigin.y + screenCenter.y - originScreenPoint.y
+      // Calculate the projected map center so the origin appears at its desired screen position
+        const projectedMapCenter = L.point(
+            projectedOrigin.x + screenCenter.x - originGoal.x,
+            projectedOrigin.y + screenCenter.y - originGoal.y
         );
-        // Apply the adjusted view while preserving the existing zoom level
-        map.setView(map.unproject(projectedCenter, map.getZoom()), map.getZoom());
-        // Start the text manager after the weather grid is loaded and the map view is adjusted
+        // Convert the calculated projected map center back to geographic coordinates
+        const mapCenter = map.unproject(projectedMapCenter, zoom);
+        // Apply the adjusted view at the current zoom level
+        map.setView(mapCenter, zoom);
+        // Start spawning and animating text fragments
         textManager.start();
     });
 // Handle any failure from loading data or initializing the app
