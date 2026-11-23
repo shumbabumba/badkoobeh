@@ -14,18 +14,21 @@ L.tileLayer('https://basemaps.cartocdn.com/rastertiles/dark_all/{z}/{x}/{y}.png?
     maxZoom: 20,
     attribution: '&copy; <a href="https://www.openstreetmap.org/copyright" target="_blank">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions" target="_blank">CARTO</a>'
 }).addTo(map);
+// Remove the default Leaflet attribution prefix
 map.attributionControl.setPrefix(false);
 
-// Define the weather grid coverage across the Absheron peninsula and Caspian coast
-const worldBounds = L.latLngBounds([40.30, 49.70], [40.52, 50.20]);
-// Allow the map to be panned beyond weather grid coverage by a padding factor
+// Define the base geographical area for weather sampling across the Absheron peninsula and Caspian coast
+const weatherBounds = L.latLngBounds([40.30, 49.70], [40.52, 50.20]);
+// Calculate padding in pixels based on the map container's dimensions
 const mapPadding = L.point(map.getSize().x / 2, map.getSize().y * 0.85);
-const projectedNorthWest = map.project(worldBounds.getNorthWest(), map.getZoom());
-const projectedSouthEast = map.project(worldBounds.getSouthEast(), map.getZoom());
+const zoom = map.getZoom();
+// Convert weatherBounds coordinates to projected map pixels at the current zoom level
+const projectedNorthWest = map.project(weatherBounds.getNorthWest(), zoom);
+const projectedSouthEast = map.project(weatherBounds.getSouthEast(), zoom);
 const mapDisplayBounds = L.latLngBounds(
-    // Pan the map further to the northwest
-    map.unproject(projectedNorthWest.subtract(mapPadding), map.getZoom()),
-    // Pan the map further to the southeast
-    map.unproject(projectedSouthEast.add(mapPadding), map.getZoom())
+    // Expand both projected corners by the pixel padding and convert them back to geographical coordinates
+    map.unproject(projectedNorthWest.subtract(mapPadding), zoom),
+    map.unproject(projectedSouthEast.add(mapPadding), zoom)
 );
+// Set the expanded display bounds as the map's geographical movement limits
 map.setMaxBounds(mapDisplayBounds);
