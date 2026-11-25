@@ -1,153 +1,125 @@
-// Set the visual conversion so a wind speed of one metre per second equals one screen pixel per second.
+// Wind speed of 1 m/sec equals 1 screen pixel/sec
 const WIND_SPEED_TO_PIXEL_SPEED = 1;
 
-// Randomize the order of the fragments in place with the Fisher-Yates shuffle algorithm.
+// Randomize the fragment order with the Fisher-Yates shuffle algorithm
 function shuffle(text) {
-    // Walk backward through the array, stopping once the first element remains.
     for (let i = text.length - 1; i > 0; i--) {
-        // Choose a random index from zero through the current index, inclusive.
         const j = Math.floor(Math.random() * (i + 1));
-        // Swap the current item with the randomly selected item.
         [text[i], text[j]] = [text[j], text[i]];
     }
     // Return the now-shuffled array 
     return text;
 }
 
-// Define the manager that creates fragments and updates their animation.
+// Define text manager that spawns and animates fragments
 function TextManager(map, text, originLatLng, options) {
-    // Save the map object so fragments can be placed and converted to coordinates.
     this.map = map;
-    // Copy and shuffle the input text so the caller's original array stays unchanged.
+    // Copy and shuffle the input text 
     this.text = shuffle(text.slice());
-    // Save the fixed session origin used when each fragment is created.
     this.origin = originLatLng;
-    // Combine default settings with any settings supplied by the caller.
+    // Combine default settings with any settings supplied by the caller
     this.opts = Object.assign({
-        // Set the time between fragment spawns in milliseconds.
+        // Set the time between fragment spawns in milliseconds
         spawnInterval: 1200,
-        // Set the default upper limit on simultaneously active fragments.
-        maxFragments: 80,
-        // Set the baseline lifespan value used by the existing lifespan calculation.
-        baseLifespan: 25,
-        // Set the maximum random percentage by which wind speed can vary per fragment.
+        // Set the default upper limit on simultaneously active fragments
+        maxFragments: 105,
+        // Set each fragment's lifespan in seconds
+        baseLifespan: 125,
+        // Set the maximum random percentage by which wind speed can vary per fragment
         speedJitter: 0.18,
-        // Set how many seconds velocity smoothing should take; zero disables smoothing.
+        // Set how many seconds velocity smoothing should take; zero disables smoothing
         windSmoothingSeconds: 0
-    }, options || {});
-    // Convert the configured base lifespan into milliseconds using the existing 0.2 scale.
-    const lifespanMilliseconds = this.opts.baseLifespan / 0.2 * 1000;
-    // Calculate how many fragments can spawn during one fragment's lifespan.
-    const capacityForContinuousSpawning = Math.ceil(lifespanMilliseconds / this.opts.spawnInterval);
-    // Check whether the configured capacity would prevent the timer from spawning continuously.
+    }, options);
+    // Convert the configured lifespan from seconds to milliseconds
+    this.lifespanMilliseconds = this.opts.baseLifespan * 1000;
+    // Calculate how many fragments can spawn during one fragment's lifespan
+    const capacityForContinuousSpawning = Math.ceil(this.lifespanMilliseconds / this.opts.spawnInterval);
+    // Check whether the preconfigured capacity would prevent the timer from spawning continuously
     if (this.opts.maxFragments < capacityForContinuousSpawning) {
-        // Explain the capacity adjustment and the values that caused it.
-        console.info('BADKOOBEH increased fragment capacity for continuous spawning', {
-            // Record the capacity originally configured by the caller.
-            configuredMaxFragments: this.opts.maxFragments,
-            // Record the minimum capacity calculated for continuous spawning.
-            effectiveMaxFragments: capacityForContinuousSpawning,
-            // Record how often the animation attempts to spawn a fragment.
-            spawnIntervalMilliseconds: this.opts.spawnInterval,
-            // Record the resulting fragment lifetime in seconds.
-            fragmentLifespanSeconds: lifespanMilliseconds / 1000
-        });
-        // Raise the limit so active fragments do not block later scheduled spawns.
+        // Raise the limit so active fragments do not block later scheduled spawns
         this.opts.maxFragments = capacityForContinuousSpawning;
     }
-    // Keep the shared weather manager, or use null when none was provided.
+    // Keep the shared weather manager, or use null when none was provided
     this.weather = this.opts.weather || null;
-    // Start with no fragment objects in the active animation.
+    // Initialize empty active fragments array
     this.fragments = [];
-    // Start the index used to cycle through the shuffled text array at zero.
+    // Start the index used to cycle through the shuffled text array at zero
     this._nextIndex = 0;
-    // Record a high-resolution starting time for frame-to-frame elapsed-time calculations.
-    this._lastTime = performance.now();
-    // Start with no leftover milliseconds accumulated toward the next spawn.
+    
+    // Start with no leftover milliseconds accumulated toward the next spawn
     this._accumulator = 0;
-    // Record when local wind information was last printed to the console.
+    // Record when local wind information was last printed to the console
     this._lastWindLogAt = 0;
-    // Track whether the current fragment-capacity warning has already been printed.
+    // Track whether the current fragment-capacity warning has already been printed
     this._capacityWarning = false;
-    // Store the visibility event handler so it can later be removed.
+    // Store the visibility event handler so it can later be removed
     this._handleVisibilityChange = null;
-    // Mark the animation loop as not running until start() is called.
+    // Mark the animation loop as not running until start() is called
     this._running = false;
 }
 
-// Define the method that creates and registers one fragment element.
+// Create and register one fragment element
 TextManager.prototype._spawnFragment = function () {
-    // Refuse to create another fragment when the active count has reached its limit.
+    // Refuse to create another fragment when the active count has reached its limit
     if (this.fragments.length >= this.opts.maxFragments) {
-        // Print the capacity warning only once while the limit continues to be reached.
+        // Print the capacity warning only once while the limit continues to be reached
         if (!this._capacityWarning) {
-            // Report the active count and configured limit for debugging.
             console.warn('BADKOOBEH fragment spawn reached its capacity', {
-                // Include how many fragments currently exist.
                 activeFragments: this.fragments.length,
-                // Include the maximum number currently allowed.
                 maxFragments: this.opts.maxFragments
             });
-            // Remember that the warning has been printed to avoid repeating it every frame.
+            // Remember that the warning has been printed to avoid repeating it every frame
             this._capacityWarning = true;
         }
-        // Stop this spawn attempt because there is no remaining capacity.
+        // Stop this spawn attempt because there is no remaining capacity
         return;
     }
-    // Allow a future capacity warning after the active count drops below the limit.
+    // Allow a future capacity warning after the active count drops below the limit
     this._capacityWarning = false;
-
-    // Select the next shuffled text item and wrap back to the start after the last item.
+    
+    // Select the next shuffled text item via post-increment and wrap back to the start after the last item
     const data = this.text[this._nextIndex++ % this.text.length];
-    // Convert the item's text value to a string, or use empty text if it is missing.
+    // Convert the item's text value to a string, or use empty string if it is missing
     const content = (data && data.text !== undefined) ? String(data.text) : '';
-    // Create a new HTML div that will display the fragment.
+    // Create a new HTML div that will display the fragment
     const element = document.createElement('div');
-    // Add the CSS class used to style all fragment elements.
+    // Add the CSS class used to style all fragment elements
     element.className = 'fragment';
-    // Put the fragment's text into the element as text, not parsed HTML.
+    // Put the fragment's text into the element as text
     element.textContent = content;
-    // Position the element relative to its map container.
+    // Position the element relative to its map container
     element.style.position = 'absolute';
-    // Set its initial left offset to zero before applying the transform.
+    // Set its initial left offset to zero 
     element.style.left = '0px';
-    // Set its initial top offset to zero before applying the transform.
+    // Set its initial top offset to zero 
     element.style.top = '0px';
-    // Prevent the fragment from intercepting mouse or touch input.
+    // Prevent the fragment from intercepting mouse or touch input
     element.style.pointerEvents = 'none';
-    // Keep the text on one line instead of wrapping within the map.
+    // Keep the text on one line instead of wrapping within the map
     element.style.whiteSpace = 'nowrap';
-    // Add the fragment element to the map's visible container.
+    // Add the fragment element to the map's visible container
     this.map.getContainer().appendChild(element);
 
-    // Read the origin latitude, accepting either a latitude field or Leaflet's lat field.
-    const latitude = Number(this.origin.latitude !== undefined ? this.origin.latitude : this.origin.lat);
-    // Read the origin longitude, accepting either a longitude field or Leaflet's lng field.
-    const longitude = Number(this.origin.longitude !== undefined ? this.origin.longitude : this.origin.lng);
-    // Convert the fixed geographic origin into a pixel position inside the map container.
+    // Convert the origin latitude and longitude to number
+    const latitude = Number(this.origin.latitude);
+    const longitude = Number(this.origin.longitude);
+    // Convert the fixed geographic origin into a pixel position inside the map container
     const point = this.map.latLngToContainerPoint([latitude, longitude]);
-    // Choose a stable per-fragment speed multiplier within the configured jitter range.
+    // Choose a stable per-fragment speed multiplier within the configured jitter range
     const speedJitter = 1 + (Math.random() * 2 - 1) * this.opts.speedJitter;
-    // Convert the configured base lifespan into seconds using the existing scale.
-    const lifespan = this.opts.baseLifespan / 0.2;
-    // Create the state object that the animation loop will update for this fragment.
+    // Create the state object that the animation loop will update for this fragment
     const fragment = {
-        // Keep a reference to the DOM node so it can be moved and removed later.
+        // Keep a reference to the DOM node so it can be moved and removed later
         element: element,
-        // Store the fragment's initial horizontal position in container pixels.
+        // Store the fragment's initial horizontal and vertical position in container pixels
         x: point.x,
-        // Store the fragment's initial vertical position in container pixels.
         y: point.y,
-        // Start with no horizontal velocity until the first wind lookup.
+        // Start with no horizontal and vertical velocity until the first wind lookup
         vx: 0,
-        // Start with no vertical velocity until the first wind lookup.
         vy: 0,
-        // Save this fragment's random multiplier so its speed variation stays consistent.
         jitter: speedJitter,
-        // Record the high-resolution creation time for age and lifespan calculations.
         createdAt: performance.now(),
-        // Store the fragment's lifespan in milliseconds for comparison with its age.
-        lifespan: lifespan * 1000
+        lifespan: this.lifespanMilliseconds
     };
 
     // Place the new element at its origin using a CSS pixel translation.
@@ -268,19 +240,9 @@ TextManager.prototype._update = function (now) {
     const deltaTime = Math.max(0, (now - this._lastTime) / 1000);
     // Save this frame time so the next update can calculate its elapsed duration.
     this._lastTime = now;
-
-    // Accumulate elapsed milliseconds so spawning remains tied to the configured interval.
-    this._accumulator += deltaTime * 1000;
-    // Spawn once for each full interval that has elapsed, including multiple intervals after a delayed frame.
-    while (this._accumulator >= this.opts.spawnInterval) {
-        // Subtract one interval because this loop is handling one scheduled spawn.
-        this._accumulator -= this.opts.spawnInterval;
-        // Create one fragment at the fixed session origin.
-        this._spawnFragment();
-    }
-
-    // Read wall-clock time for weather lookup and human-readable wind diagnostics.
+    // Read wall-clock time once for origin checks and fragment wind lookups in this frame.
     const simulationTime = Date.now();
+
     // Iterate backward so expired fragments can be removed without skipping the next item.
     for (let i = this.fragments.length - 1; i >= 0; i--) {
         // Get the fragment whose state will be updated during this pass.
@@ -288,7 +250,7 @@ TextManager.prototype._update = function (now) {
         // Calculate this fragment's age in milliseconds from its creation time.
         const age = now - fragment.createdAt;
         // Check whether this fragment has lived longer than its configured lifespan.
-        if (age > fragment.lifespan) {
+        if (age >= fragment.lifespan) {
             // Remove an expired fragment from the screen and active list.
             this._removeFragment(i);
             // Skip movement and visual updates for the fragment that was just removed.
@@ -307,6 +269,16 @@ TextManager.prototype._update = function (now) {
         fragment.element.style.transform = 'translate(' + fragment.x + 'px, ' + fragment.y + 'px) scale(' + scale + ')';
         // Apply the calculated age-based opacity to the fragment element.
         fragment.element.style.opacity = opacity;
+    }
+
+    // Accumulate elapsed milliseconds so spawning remains tied to the configured interval.
+    this._accumulator += deltaTime * 1000;
+    // Spawn once for each full interval that has elapsed, including multiple intervals after a delayed frame.
+    while (this._accumulator >= this.opts.spawnInterval) {
+        // Subtract one interval because this loop is handling one scheduled spawn.
+        this._accumulator -= this.opts.spawnInterval;
+        // Create one fragment at the fixed session origin after expired fragments have been removed.
+        this._spawnFragment();
     }
 };
 
