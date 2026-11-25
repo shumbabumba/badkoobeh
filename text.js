@@ -1,5 +1,7 @@
 // Wind speed of 1 m/sec equals 1 screen pixel/sec
 const WIND_SPEED_TO_PIXEL_SPEED = 1;
+// Treat valid origin wind speeds below one metre per second as too weak to release book fragments.
+const CALM_WIND_THRESHOLD_METERS_PER_SECOND = 1;
 
 // Randomize the fragment order with the Fisher-Yates shuffle algorithm
 function shuffle(text) {
@@ -141,6 +143,62 @@ TextManager.prototype._removeFragment = function (index) {
     }
     // Remove the fragment state from the active list.
     this.fragments.splice(index, 1);
+};
+
+// Show one stationary message at the fixed origin while its wind is below the release threshold.
+TextManager.prototype._showCalmWindMessage = function () {
+    // Keep the existing message instead of adding a duplicate on every spawn interval.
+    if (this._calmWindMessageElement) return;
+    // Create a text element for the calm-wind notice.
+    const element = document.createElement('div');
+    // Reuse the visual style used by the book fragments.
+    element.className = 'fragment';
+    // Set the exact message displayed when there is almost no wind.
+    element.textContent = 'currently, no wind here';
+    // Position the message relative to the map container.
+    element.style.position = 'absolute';
+    // Set its initial left offset to zero before applying the transform.
+    element.style.left = '0px';
+    // Set its initial top offset to zero before applying the transform.
+    element.style.top = '0px';
+    // Prevent the message from intercepting mouse or touch input.
+    element.style.pointerEvents = 'none';
+    // Keep the message on one line instead of wrapping inside the map.
+    element.style.whiteSpace = 'nowrap';
+    // Read the fixed origin latitude, accepting either the latitude or lat property.
+    const latitude = Number(this.origin.latitude !== undefined ? this.origin.latitude : this.origin.lat);
+    // Read the fixed origin longitude, accepting either the longitude or lng property.
+    const longitude = Number(this.origin.longitude !== undefined ? this.origin.longitude : this.origin.lng);
+    // Convert the origin into a pixel position inside the map container.
+    const point = this.map.latLngToContainerPoint([latitude, longitude]);
+    // Place the stationary message at the same screen coordinate used for new fragments.
+    element.style.transform = 'translate(' + point.x + 'px, ' + point.y + 'px)';
+    // Add the message to the visible map container.
+    this.map.getContainer().appendChild(element);
+    // Save its element so later updates do not create duplicate notices.
+    this._calmWindMessageElement = element;
+};
+
+// Remove the stationary calm-wind message when normal fragment spawning can resume.
+TextManager.prototype._removeCalmWindMessage = function () {
+    // Do nothing when no calm-wind message is currently displayed.
+    if (!this._calmWindMessageElement) return;
+    // Remove the message from the page if it still has a parent element.
+    if (this._calmWindMessageElement.parentNode) {
+        this._calmWindMessageElement.parentNode.removeChild(this._calmWindMessageElement);
+    }
+    // Clear the saved element reference after removal.
+    this._calmWindMessageElement = null;
+};
+
+// Look up wind at the session's fixed origin for a given simulation timestamp.
+TextManager.prototype._getOriginWind = function (timestamp) {
+    // Read the origin latitude, accepting either a latitude field or Leaflet's lat field.
+    const latitude = Number(this.origin.latitude !== undefined ? this.origin.latitude : this.origin.lat);
+    // Read the origin longitude, accepting either a longitude field or Leaflet's lng field.
+    const longitude = Number(this.origin.longitude !== undefined ? this.origin.longitude : this.origin.lng);
+    // Return the shared weather estimate, or null when no weather manager is available.
+    return this.weather ? this.weather.getWindAt(latitude, longitude, timestamp) : null;
 };
 
 // Define one movement update for a fragment using the wind at its current position.
@@ -337,6 +395,8 @@ TextManager.prototype.stop = function () {
         // Clear the saved function reference to show there is no registered handler.
         this._handleVisibilityChange = null;
     }
+    // Remove the calm-wind message when the animation is stopped.
+    this._removeCalmWindMessage();
     // Walk backward through active fragments so each can safely be removed from the array.
     for (let i = this.fragments.length - 1; i >= 0; i--) {
         // Remove this fragment's DOM element and state from the manager.
