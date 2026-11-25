@@ -69,7 +69,7 @@ Promise.all([fetchJSON('files/locations.json'), fetchJSON('files/text.json')]).t
         // Center the desired screen position of origin by default
         let originGoal = L.point(map.getSize().x / 2, map.getSize().y / 2);
         // If there is a dominant wind component
-        if (strongestWindComponent > 1) {
+        if (strongestWindComponent > 0) {
             // If north-south wind is stronger than east-west wind
             if (Math.abs(wind.north) / map.getSize().y >= Math.abs(wind.east) / map.getSize().x) {
                 // Center the origin horizontally and shift it vertically based on the wind direction

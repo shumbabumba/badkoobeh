@@ -97,7 +97,6 @@ body {
     text-decoration: none;
 }
 
-/* Text fragment styling - simple, high-contrast, preserves Azerbaijani Unicode */
 .fragment {
     color: #ffffff;
     font-size: 11px;
